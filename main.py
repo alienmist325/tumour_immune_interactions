@@ -17,6 +17,11 @@ class Cell:
         return Cell(simulation.get_random_phenotype, simulation)
 
 
+class Cells:
+    def __init__(self, cells):
+        self.cells = cells
+
+
 class SimulationState:
     def __init__(self):
         pass
@@ -61,6 +66,11 @@ class Simulation:
         self.phenotype_step_size = (
             2 * max_absolute_phenotype / no_possible_phenotypes  # check this
         )
+        self.phenotype_range = range(
+            -self.max_absolute_phenotype,
+            self.max_absolute_phenotype,
+            self.phenotype_step_size,
+        )  # check
         self.history = []
         self.cells = []
 
