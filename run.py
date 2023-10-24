@@ -5,7 +5,7 @@ from conf import path_to_data
 def create_simulation():
     time_step = 0.05
     final_time = 30
-    no_possible_phenotypes = 1500
+    no_possible_phenotypes = 101
 
     tumour_selectivity = 0.1  # in [0.1,2]
     CTL_selectivity = 0.1  # in [0.1,2]
@@ -17,13 +17,13 @@ def create_simulation():
         final_time,
         no_possible_phenotypes,
         1,
-        no_init_tumour_cells=100,
-        no_init_CTL_cells=100,
+        no_init_tumour_cells=10000,
+        no_init_CTL_cells=10000,
         tumour_universal_params=UniversalCellParams(
-            1.5, 1.5 * (10**-6), 5 * (10**-6), tumour_selectivity
+            1.5, 1.5e-6, 5e-6, tumour_selectivity
         ),
         CTL_universal_params=UniversalCellParams(
-            5 * (10**-2), 5 * (10**-6), 3 * (10**-5), CTL_selectivity
+            5e-2, 5e-6, 3e-5, CTL_selectivity
         ),
         TCR_affinity_range=affinity_range,
         TCR_binding_affinity=binding_affinity,

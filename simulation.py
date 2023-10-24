@@ -4,6 +4,7 @@ from copy import deepcopy
 import conf
 import importlib
 import pickle
+from typing import Self
 
 
 class PhenotypeStructure:
@@ -88,7 +89,7 @@ class UniversalCellParams:
         self.selectivity = selectivity
 
 
-class Cells:
+class Cells:  # Has a 1000x scaling
     def __init__(
         self,
         cells: set[Cell],
@@ -111,7 +112,9 @@ class Cells:
 
     def get_no_cells_at_phenotype(self, phenotype_id):
         if phenotype_id in self.no_cells_at_phenotype:
-            return self.no_cells_at_phenotype[phenotype_id]
+            return (
+                1000 * self.no_cells_at_phenotype[phenotype_id]
+            )  # This should be removed
         else:
             return 0
 
@@ -144,9 +147,11 @@ class Cells:
         new_cells = set()
         dead_cells = set()
         for cell in cells.cells:
+            weights = get_phenotype_probabilities(cell.phenotype_id)
+
             action_name = random.choices(
                 population=["birth", "death", "quiescence"],
-                weights=get_phenotype_probabilities(cell.phenotype_id),
+                weights=weights,
             )[0]
             """
             if action_name != "quiescence":
@@ -163,6 +168,86 @@ class Cells:
             if cell in cells.cells:
                 print("Already here")
             cells.cells.add(cell)
+
+
+class CellBundle:
+    def __init__(
+        self,
+        universal_params: UniversalCellParams,
+        phen_struct: PhenotypeStructure,
+        cells_at_phenotype: dict,
+    ):
+        self.cells_at_phenotype = cells_at_phenotype
+        self.phen_struct = phen_struct
+        self.universal_params = universal_params
+
+    def __len__(self):
+        return sum(self.cells_at_phenotype.values())
+
+    def create_cells(self, phenotype_id, number):
+        if phenotype_id not in self.cells_at_phenotype:
+            self.cells_at_phenotype[phenotype_id] = number
+        else:
+            self.cells_at_phenotype[phenotype_id] += number
+
+    def kill_cells(self, phenotype_id, number):
+        if phenotype_id not in self.cells_at_phenotype:
+            raise ValueError(
+                "No cells of this phenotype exist. Cannot kill cells."
+            )
+        else:
+            if self.cells_at_phenotype[phenotype_id] < number:
+                raise ValueError(
+                    "Not enough cells of this phenotype exist. Cannot kill cells."
+                )
+            else:
+                self.cells_at_phenotype[phenotype_id] -= number
+
+    def mutate_int(self, phenotype_id, number, no_steps, direction):
+        new_phenotype_id = self.phen_struct.shift(
+            phenotype_id, no_steps, direction
+        )
+        self.kill_cells(phenotype_id, number)
+        self.create_cells(new_phenotype_id, number)
+
+    def mutate_left(self, phenotype_id, number):
+        self.mutate_int(phenotype_id, number, 1, -1)
+
+    def mutate_right(self, phenotype_id, number):
+        self.mutate_int(phenotype_id, number, 1, 1)
+
+    @classmethod
+    def random(
+        self,
+        number,
+        universal_params: UniversalCellParams,
+        phen_struct: PhenotypeStructure,
+    ):
+        cell_bundle = CellBundle(universal_params, phen_struct, {})
+        for i in range(number):
+            cell_bundle.create_cells(phen_struct.get_random_phenotype(), 1)
+        return cell_bundle
+
+    @classmethod
+    def evolve_population(
+        self,
+        cells: Self,
+        get_phenotype_probabilities,
+    ):
+        new_cells = deepcopy(cells)
+        for phenotype_id, number in cells.cells_at_phenotype.items():
+            # print(number)
+            # number = 100 * number
+            weights = get_phenotype_probabilities(phenotype_id)
+            # print(weights)
+            rng = np.random.default_rng()
+            births, deaths, quiescences = rng.multinomial(number, weights)
+            # print(births, "|", deaths, "|", quiescences)
+            new_cells.create_cells(phenotype_id, births)
+            new_cells.kill_cells(phenotype_id, deaths)
+            # print(len(new_cells))
+            # Could just subtract and do this in one step
+        return new_cells
 
 
 class SimulationState:
@@ -206,10 +291,10 @@ class Simulation:
         self.phen_struct = PhenotypeStructure(
             absolute_max_phenotype, no_possible_phenotypes
         )
-        self.tumour_cells = Cells.random(
+        self.tumour_cells = CellBundle.random(
             no_init_tumour_cells, tumour_universal_params, self.phen_struct
         )
-        self.CTL_cells = Cells.random(
+        self.CTL_cells = CellBundle.random(
             no_init_CTL_cells, CTL_universal_params, self.phen_struct
         )
 
@@ -221,8 +306,10 @@ class Simulation:
 
         self.phenotype_tumour_probabilities = {}
         self.phenotype_CTL_probabilities = {}
+        self.phenotype_separation_scaling = {}
 
         self.history = SimulationHistory()
+        self.temp_scalar = 1
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
@@ -230,7 +317,7 @@ class Simulation:
     def get_average_immune_score(self):
         pass
 
-    def get_phenotypic_separation_scaling(
+    def compute_phenotypic_separation_scaling(
         self,
         phenotype_1_id,
         phenotype_2_id,
@@ -246,7 +333,28 @@ class Simulation:
         else:
             return 0
 
-    def get_phenotype_natural_death_rate(self, cells: Cells, phenotype_id):
+    def get_phenotypic_separation_scaling(
+        self,
+        phenotype_1_id,
+        phenotype_2_id,
+        range,
+    ):
+        if (
+            phenotype_1_id,
+            phenotype_2_id,
+        ) not in self.phenotype_separation_scaling:
+            self.phenotype_separation_scaling[
+                (phenotype_1_id, phenotype_2_id)
+            ] = self.compute_phenotypic_separation_scaling(
+                phenotype_1_id, phenotype_2_id, range
+            )
+        return self.phenotype_separation_scaling[
+            (phenotype_1_id, phenotype_2_id)
+        ]
+
+    def get_phenotype_natural_death_rate(
+        self, cells: CellBundle, phenotype_id
+    ):
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
@@ -255,15 +363,15 @@ class Simulation:
                     other_phenotype_id,
                     cells.universal_params.selectivity,
                 )
-                * cells.get_no_cells_at_phenotype(phenotype_id)
-                for other_phenotype_id in self.phen_struct.id_range
+                * cells_at_phenotype
+                for other_phenotype_id, cells_at_phenotype in cells.cells_at_phenotype.items()
             ]
         )
 
     def get_phenotype_interaction_induced_rate(
         self,
-        cells: Cells,
-        other_cells: Cells,
+        cells: CellBundle,
+        other_cells: CellBundle,
         phenotype_id,
     ):
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
@@ -277,11 +385,25 @@ class Simulation:
                         other_phenotype_id,
                         self.TCR_affinity_range,
                     )
-                    * other_cells.get_no_cells_at_phenotype(phenotype_id)
-                    for other_phenotype_id in self.phen_struct.id_range
+                    * other_cells_at_phenotype
+                    for other_phenotype_id, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
                 ]
             )
         )
+
+    def mutate(self, cells: CellBundle):
+        new_cells = deepcopy(cells)
+        for phenotype_id, number in cells.cells_at_phenotype.items():
+            rng = np.random.default_rng()
+            mutations = rng.binomial(
+                number, self.tumour_phenotypic_variation_probability
+            )
+            mutate_lefts, mutate_rights = rng.multinomial(
+                mutations, [1 / 2.0] * 2
+            )
+            new_cells.mutate_left(phenotype_id, mutate_lefts)
+            new_cells.mutate_right(phenotype_id, mutate_rights)
+        return new_cells
 
     def run(self):
         self.print("The simulation is starting.")
@@ -297,27 +419,17 @@ class Simulation:
             self.time_step += 1
 
             # Pre-calculation
-            self.tumour_cells.compute_cells_at_each_phenotype()
-            self.CTL_cells.compute_cells_at_each_phenotype()
 
             # Simulating effects
-            for tumour_cell in self.tumour_cells.cells:
-                r_1 = random.randrange(0, 1)
-
-                if r_1 < self.tumour_phenotypic_variation_probability:
-                    action = random.choice(
-                        [tumour_cell.mutate_left, tumour_cell.mutate_right]
-                    )
-                    action()
+            self.tumour_cells = self.mutate(self.tumour_cells)
 
             self.phenotype_tumour_probabilities = {}
             self.phenotype_CTL_probabilities = {}
 
-            Cells.evolve_population(
+            self.tumour_cells = CellBundle.evolve_population(
                 self.tumour_cells, self.get_phenotype_tumour_probabilities
             )
-
-            Cells.evolve_population(
+            self.CTL_cells = CellBundle.evolve_population(
                 self.CTL_cells, self.get_phenotype_CTL_probabilities
             )
 
@@ -372,6 +484,8 @@ class Simulation:
                 self.tumour_cells, self.CTL_cells, phenotype_id
             )
         )
+        birth = self.temp_scalar * birth
+        death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
 
     def compute_phenotype_CTL_probabilities(self, phenotype_id):
@@ -384,6 +498,8 @@ class Simulation:
         death = self.time_step_size * self.get_phenotype_natural_death_rate(
             self.CTL_cells, phenotype_id
         )
+        birth = self.temp_scalar * birth
+        death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
 
     @classmethod
