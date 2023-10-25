@@ -1,5 +1,5 @@
 "name","description","time_step","final_time","no_possible_phenotypes","tumour_selectivity","CTL_selectivity","binding_affinity","affinity_range","no_init_tumour_cells","no_init_CTL_cells","tumour_natural_prolif_rate","tumour_natural_death_rate","tumour_interaction_induced_rate","CTL_natural_prolif_rate","CTL_natural_death_rate","CTL_interaction_induced_rate","tumour_phenotypic_variation_probability"
-"Default","The default","0.05","30","1500","1","1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
+"Default","The default","0.05","30","1500","0.1","0.1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
 "Config1","The original","0.05","30","101","0.1","0.1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
 "Config2","200 Phenotypes","0.05","30","200","0.1","0.1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
 "Config3","Reduced selectivity 10x to match no phenotypes","0.05","30","100","0.01","0.01","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
@@ -7,3 +7,4 @@
 "Config5","Middle selectivity, which is like 1,2","0.05","30","100","1","1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
 "Config6","Small pop size. This errors out because weights are messed up..","0.05","30","100","1","1","0.1","0.1","100","100","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
 "Config7","Smallish pop size. Same pattern though, and reaches a similarly large value","0.05","30","100","1","1","0.1","0.1","500","500","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
+"Config9","The default","0.05","30","1500","0.1","0.1","0.1","0.1","10000","10000","1.5","1.5e-6","5e-6","5e-2","5e-6","3e-5","0.01"
