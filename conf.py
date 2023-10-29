@@ -5,6 +5,7 @@ from types import SimpleNamespace
 interrupt = False
 debug = True
 path_to_data = "sim_data/sim.pickle"
+m_adjustment = True  # Make my simulation seem more like Marta's
 
 
 def get_sim_configuration():

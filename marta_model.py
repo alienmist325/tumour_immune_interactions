@@ -426,7 +426,9 @@ def matrix_exponential_dist(num_subintervals_lattice, delta):
     return matrix
 
 
-if __name__ == "__main__":
+run = False
+
+if __name__ == "__main__" and run:
     # Randomly generate an interaction matrix
     gamma_mat = matrix_exponential_dist(num_subintervals_lattice=100, delta=1)
 

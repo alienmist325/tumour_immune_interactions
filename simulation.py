@@ -284,6 +284,11 @@ class Simulation:
         TCR_binding_affinity,
         tumour_phenotypic_variation_probability,
     ):
+        self.final_time = final_time
+        if conf.m_adjustment:
+            scalar = 1  # 1.15, 2
+            time_step_size *= scalar
+            final_time *= scalar
         self.time_step_size = time_step_size
         self.time_step = 0  # An integer describing which time step we're on
         self.final_time_step = int(final_time / time_step_size)
