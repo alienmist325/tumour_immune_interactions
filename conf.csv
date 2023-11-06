@@ -26,5 +26,11 @@
 "Config22","Config20, but 3x tumour death (meaningless) and 3x CTL death. Just causes the initial peak to be smaller.","0.05","30","100","1.8","1.8","2","1.8","16424","36624","1.5","5e-6","5e-6","0.5","15e-6","3e-5","0.1",5,1
 "Config23","Almeida S1 c). A discrepancy once more: CTL cells grow again after hitting equilibrium, which causes lots of dynamics","0.05","30","100","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
 "Config24","Almeida S1 c). Double phenotypes, but same behaviour, which once again seems to suggest no. phenotypes plays no real role (fortunately)","0.05","30","200","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
-"Config25","Almeida S1 c) with the correct no. phenotypes (to see if this makes a difference)","0.05","30","1500","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config25","Almeida S1 c) with the correct no. phenotypes (to see if this makes a difference). Am only trying Marta's. Took 15 minutes to run","0.05","30","1500","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
 "Config26","Almeida S1 c). No tumour mutation","0.05","30","100","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0",5,1
+"Config27","Almeida S1 c). Minimal tumour mutation","0.05","30","100","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","1e-3",5,1
+"Config28","Almeida Fig 2 c). Runs much faster (fewer interactions?) Aligns with Almeida","0.05","30","100","0.2","0.2","1.5","0.7","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config29","Almeida Fig 5 c). This does not align. Looks more like the ""tame"" a), and has distribution with 3 peaks, like b).","0.05","30","100","0.7","0.7","1","0.2","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config30","Almeida Fig 5 c). Reduce affinity, and got minutely more bumps and a differentish distribution. Didn't save.","0.05","30","100","0.7","0.7","1","0.05","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config31","Almeida Fig 5 c). Increase phenotypes (might this have an effect here?)","0.05","30","200","0.7","0.7","1","0.2","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config32","Almeida Fig 5 c). Increase tumour variation","0.05","30","100","0.7","0.7","1","0.2","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.1",5,1
