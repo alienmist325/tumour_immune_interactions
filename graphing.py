@@ -1,5 +1,6 @@
 from simulation import Simulation
 from conf import path_to_data
+import numpy as np
 
 
 def get_sim(path=path_to_data) -> Simulation:
@@ -25,6 +26,8 @@ def graph(path=path_to_data):
 
     sim = get_sim(path)
     tumour_cells_pop, CTL_cells_pop = get_pops(sim)
-    plt.plot(tumour_cells_pop)
-    plt.plot(CTL_cells_pop)
+    times = np.linspace(0, sim.final_time, sim.final_time_step)
+    plt.plot(times, tumour_cells_pop, label="Tumour Cells")
+    plt.plot(times, CTL_cells_pop, label="CTL Cells")
+    plt.legend()
     plt.show()
