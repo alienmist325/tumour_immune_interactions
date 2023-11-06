@@ -15,3 +15,6 @@
 "Config11","Removing factors, and seeing the effects","0.1","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","0","5e-2","5e-6","0","0.01",5,1
 "Config12","Only growth. Halved time, because growth causes overflow. Mine: 3.8e14; Marta:2e13","0.1","15","100","1.8","1.8","0.1","2","16424","36624","1.5","0","0","5e-2","0","0","0.01",5,1
 "Config13","Only death. Mine: 1, 1.5 e4; Marta:1, 1.5 e4","0.1","15","100","1.8","1.8","0.1","2","16424","36624","0","5e-6","0","0","5e-6","0","0.01",5,1
+"Config14","Only combined interaction. Exactly the same","0.1","30","100","1.8","1.8","0.1","2","16424","36624","0","0","5e-6","0","0","3e-5","0.01",5,1
+"Config15","A new configuration with all parameters enabled to compare mine and Marta","0.05","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","5e-6","5e-2","5e-6","3e-5","0.01",5,1
+"Config16","A new configuration with all parameters enabled to compare mine and Marta","0.05","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","5e-6","5e-2","5e-6","3e-5","0",5,1

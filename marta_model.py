@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-
+import os
 
 def create_u_vector(L, num_subintervals_lattice):
     """
@@ -269,6 +269,7 @@ def plot_total_cells_evolution(time_vector, total_cancer_cells, total_t_cells):
     total_t_cells: array containing the total T-cells at which model is evaluated
     """
     # Plot results of total cells over time
+    plt.rcParams["savefig.directory"] = "./outputs" #os.chdir(os.path.dirname(dir_name))
     plt.title("Evolution of Cancer cells and T-cells over time", fontsize=20)
     plt.plot(
         time_vector[:-1], total_cancer_cells, label="Cancer cells", color="r"

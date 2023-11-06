@@ -506,9 +506,13 @@ class Simulation:
         birth = self.temp_scalar * birth
         death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
+    
+    def extend(self, additional_time):
+        self.final_time += additional_time
+        self.final_time_step = int(self.final_time / self.time_step_size)
 
     @classmethod
-    def load_simulation(self, path_to_data):
+    def load_simulation(self, path_to_data) -> Self:
         with open(path_to_data, "rb") as f:
             sim = pickle.load(f)
             print("Successfully opened the previous simulation.")

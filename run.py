@@ -68,3 +68,12 @@ def run():
     sim.run()
 
     Simulation.save_simulation(path_to_data, sim)
+
+def extend(additional_time):
+    try:
+        sim = Simulation.load_simulation(path_to_data)
+        sim.extend(additional_time)
+        Simulation.save_simulation(path_to_data, sim)
+        print("Simulation extended.")
+    except IOError:
+        print("Simuation to extend could not be found")
