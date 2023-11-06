@@ -17,4 +17,14 @@
 "Config13","Only death. Mine: 1, 1.5 e4; Marta:1, 1.5 e4","0.1","15","100","1.8","1.8","0.1","2","16424","36624","0","5e-6","0","0","5e-6","0","0.01",5,1
 "Config14","Only combined interaction. Exactly the same","0.1","30","100","1.8","1.8","0.1","2","16424","36624","0","0","5e-6","0","0","3e-5","0.01",5,1
 "Config15","A new configuration with all parameters enabled to compare mine and Marta","0.05","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","5e-6","5e-2","5e-6","3e-5","0.01",5,1
-"Config16","A new configuration with all parameters enabled to compare mine and Marta","0.05","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","5e-6","5e-2","5e-6","3e-5","0",5,1
+"Config16","Turned off tumour mutation!","0.05","30","100","1.8","1.8","0.1","2","16424","36624","1.5","5e-6","5e-6","5e-2","5e-6","3e-5","0",5,1
+"Config17","Following Almeida Figure S1's parameters exactly, but with no mutation, and Marta's initial populations (shouldn't make a major difference)","0.05","30","100","1.8","1.8","3.5","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0",5,1
+"Config18","Config17, but with tumour variation. S1 a) replicated exactly. Adding mutation changed basically nothing (hist + pops)","0.05","30","100","1.8","1.8","3.5","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config19","Almeida S1 b). Seems to have less variation/ waviness in the pop","0.05","30","100","1.8","1.8","2","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config20","Almeida S1 b) but with more mutation. Still minimal waviness.","0.05","30","100","1.8","1.8","2","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.1",5,1
+"Config21","Config20, but with more tumour death. Still still minimal waviness.","0.05","30","100","1.8","1.8","2","1.8","16424","36624","1.5","5e-6","5e-6","0.5","5e-6","3e-5","0.1",5,1
+"Config22","Config20, but 3x tumour death (meaningless) and 3x CTL death. Just causes the initial peak to be smaller.","0.05","30","100","1.8","1.8","2","1.8","16424","36624","1.5","5e-6","5e-6","0.5","15e-6","3e-5","0.1",5,1
+"Config23","Almeida S1 c). A discrepancy once more: CTL cells grow again after hitting equilibrium, which causes lots of dynamics","0.05","30","100","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config24","Almeida S1 c). Double phenotypes, but same behaviour, which once again seems to suggest no. phenotypes plays no real role (fortunately)","0.05","30","200","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config25","Almeida S1 c) with the correct no. phenotypes (to see if this makes a difference)","0.05","30","1500","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
+"Config26","Almeida S1 c). No tumour mutation","0.05","30","100","1.8","1.8","0.3","1.8","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0",5,1

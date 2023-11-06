@@ -6,7 +6,8 @@ from conf import get_sim_configuration
 print("blom")
 
 cf = get_sim_configuration()
-const_affinity_matrix = cf.binding_affinity * np.ones((101, 101))
+mat_size = int(cf.no_possible_phenotypes + 1)
+const_affinity_matrix = cf.binding_affinity * np.ones((mat_size, mat_size))
 
 
 nC, nT, u_vector, time_vector = interaction_matrix_model(

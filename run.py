@@ -59,15 +59,21 @@ def create_simulation():
 
 
 def run():
+    create_new = False
     try:
         sim = Simulation.load_simulation(path_to_data)
+        if input("Would you like to overwrite this simulation?") == "y":
+            create_new = True
     except IOError:
+        create_new = True
+
+    if create_new:
         print("Creating a new simulation.")
         sim = create_simulation()
-
     sim.run()
 
     Simulation.save_simulation(path_to_data, sim)
+
 
 def extend(additional_time):
     try:

@@ -21,13 +21,48 @@ def get_pops(sim: Simulation):
     return tumour_cells_pop, CTL_cells_pop
 
 
-def graph(path=path_to_data):
+def graph(sim: Simulation):
     import matplotlib.pyplot as plt
 
-    sim = get_sim(path)
     tumour_cells_pop, CTL_cells_pop = get_pops(sim)
-    times = np.linspace(0, sim.final_time, sim.final_time_step)
-    plt.plot(times, tumour_cells_pop, label="Tumour Cells")
+    times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
     plt.plot(times, CTL_cells_pop, label="CTL Cells")
+    plt.plot(times, tumour_cells_pop, label="Tumour Cells")
     plt.legend()
     plt.show()
+
+
+def graph_from_path(path=path_to_data):
+    sim = get_sim(path)
+    graph(sim)
+
+
+def flatten_dict(dict: dict):
+    return [key for key, val in dict.items() for _ in range(val)]
+
+
+def hist(sim: Simulation):
+    import matplotlib.pyplot as plt
+
+    tumour_cell_phenotypes = flatten_dict(sim.tumour_cells.cells_at_phenotype)
+    CTL_cell_phenotypes = flatten_dict(sim.CTL_cells.cells_at_phenotype)
+
+    plt.hist(
+        CTL_cell_phenotypes,
+        label="CTL Cells",
+        bins=sim.phen_struct.no_possible_values,
+        alpha=0.6,
+    )
+    plt.hist(
+        tumour_cell_phenotypes,
+        label="Tumour Cells",
+        bins=sim.phen_struct.no_possible_values,
+        alpha=0.6,
+    )
+    plt.legend()
+    plt.show()
+
+
+def hist_from_path(path=path_to_data):
+    sim = get_sim(path)
+    hist(sim)

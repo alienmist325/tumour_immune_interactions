@@ -1,7 +1,7 @@
 from run import run
 from cProfile import Profile
 from pstats import SortKey, Stats
-from graphing import graph
+from graphing import graph_from_path
 
 """
 with Profile() as profile:
@@ -11,4 +11,4 @@ with Profile() as profile:
 run()
 
 if input("Would you like to see the result? \n") == "y":
-    graph()
+    graph_from_path()
