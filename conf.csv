@@ -34,3 +34,4 @@
 "Config30","Almeida Fig 5 c). Reduce affinity, and got minutely more bumps and a differentish distribution. Didn't save.","0.05","30","100","0.7","0.7","1","0.05","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
 "Config31","Almeida Fig 5 c). Increase phenotypes (might this have an effect here?)","0.05","30","200","0.7","0.7","1","0.2","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
 "Config32","Almeida Fig 5 c). Increase tumour variation","0.05","30","100","0.7","0.7","1","0.2","16424","36624","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.1",5,1
+"Config33","Almeida S1 c). A discrepancy once more: CTL cells grow again after hitting equilibrium, which causes lots of dynamics","0.05","30","100","1.8","1.8","0.3","1.8","100","100","1.5","1.5e-6","5e-6","0.5","5e-6","3e-5","0.01",5,1
