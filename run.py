@@ -59,7 +59,7 @@ def create_simulation():
     return sim
 
 
-def run():
+def run(path_to_data=path_to_data):
     create_new = False
     try:
         sim = Simulation.load_simulation(path_to_data)
