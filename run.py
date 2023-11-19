@@ -54,6 +54,7 @@ def create_simulation():
         TCR_affinity_range=cf.affinity_range,
         TCR_binding_affinity=cf.binding_affinity,
         tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
+        config_name=cf.name,
     )
     return sim
 

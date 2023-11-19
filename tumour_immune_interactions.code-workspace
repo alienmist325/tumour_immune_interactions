@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "Tumour-immune-interaction-model",
+			"path": "../Tumour-immune-interaction-model"
+		}
+	],
+	"settings": {}
+}

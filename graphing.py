@@ -1,6 +1,9 @@
-from simulation import Simulation
+from simulation import Simulation, SimulationState, CellBundle
 from conf import path_to_data
 import numpy as np
+import pandas as pd
+from typing import Callable
+import os
 
 
 def get_sim(path=path_to_data) -> Simulation:
@@ -29,12 +32,69 @@ def graph(sim: Simulation):
     plt.plot(times, CTL_cells_pop, label="CTL Cells")
     plt.plot(times, tumour_cells_pop, label="Tumour Cells")
     plt.legend()
-    plt.show()
+    return plt
+
+
+def fish_tumour(sim: Simulation):
+    return fish(sim, "tumour")
+
+
+def fish_CTL(sim: Simulation):
+    return fish(sim, "CTL")
+
+
+def fish(sim: Simulation, bundle_name):
+    from pyfish import fish_plot, process_data, setup_figure
+    import matplotlib.pyplot as plt
+
+    if sim.history.state_init_type == "detailed":
+        bundles = [get_bundle(state, bundle_name) for state in sim.history]
+        populations = []
+        phenotypes = set()
+        for step in range(len(bundles)):
+            bundle = bundles[step]
+            for phenotype, pop in bundle.cells_at_phenotype.items():
+                populations.append([phenotype, step, pop])
+                phenotypes.add(phenotype)
+        populations_df = pd.DataFrame(
+            np.array(populations), columns=["Id", "Step", "Pop"]
+        )
+        parent_tree = []
+        """
+        We need to construct the parent tree. I'm not sure quite how this works with mutations, since the parent could be any from the left/ right. 
+        This means no phenotypes have no parents.. And hmm, one phenotype can have multiple phenotypes.
+        To generate this, I'd want to collect all present phenotypes, then order chronologically, and assign parents in descending order.
+        """
+        ordered_phenotypes = list(phenotypes)
+        ordered_phenotypes.sort()
+        parent = None
+        child = None
+        for i in range(len(ordered_phenotypes)):
+            child = ordered_phenotypes[i]
+            if parent is not None:
+                parent_tree.append([parent, child])
+            parent = child
+        parent_tree_df = pd.DataFrame(
+            np.array(parent_tree), columns=["ParentId", "ChildId"]
+        )
+        data = process_data(populations_df, parent_tree_df)
+        setup_figure()
+        fish_plot(*data)
+        return plt
+
+
+def get_bundle(state: SimulationState, bundle_name) -> CellBundle:
+    if bundle_name == "tumour":
+        return state.tumour_cells
+    elif bundle_name == "CTL":
+        return state.CTL_cells
+    else:
+        return None
 
 
 def graph_from_path(path=path_to_data):
     sim = get_sim(path)
-    graph(sim)
+    graph(sim).show()
 
 
 def flatten_dict(dict: dict):
@@ -60,9 +120,35 @@ def hist(sim: Simulation):
         alpha=0.6,
     )
     plt.legend()
-    plt.show()
+    return plt
+
+
+plt_fn_label = {
+    graph: "graph",
+    hist: "hist",
+    fish_tumour: "fish_tumour",
+    fish_CTL: "fish_CTL",
+}
+
+
+def savefig(sim: Simulation, plt_fn: Callable):
+    plt = plt_fn(sim)
+    out_path = f"outputs/output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
+    while os.path.exists(out_path):
+        overwrite = input("Would you like to overwrite the existing file?")
+        if overwrite == "y":
+            break
+        else:
+            still_save = input("Would you still like to save the file?")
+            if still_save == "y":
+                out_path = input("Enter the new path:")
+                continue
+            else:
+                print("The plot has not been saved.")
+                return
+    plt.savefig(out_path)
 
 
 def hist_from_path(path=path_to_data):
     sim = get_sim(path)
-    hist(sim)
+    hist(sim).show()

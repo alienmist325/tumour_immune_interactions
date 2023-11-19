@@ -3,6 +3,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import os
 
+
 def create_u_vector(L, num_subintervals_lattice):
     """
     Creates lattice of points for simulation
@@ -102,9 +103,7 @@ def calculate_competition_vector(lattice_points, selectivity_range, n_vec):
         # Apply the function g given the selectivity range
         g_vec = g(lattice_points[i], lattice_points, selectivity_range)
         # Multiply each element in g_vec by the corresponding element in n_vec and the spatial step, then sum over all elements
-        competition_vector[i] = np.sum(
-            spatial_step * np.multiply(g_vec, n_vec)
-        )
+        competition_vector[i] = np.sum(spatial_step * np.multiply(g_vec, n_vec))
 
     return competition_vector
 
@@ -142,9 +141,7 @@ def second_derivative_discretisation(lattice_points):
     return A
 
 
-def calculate_I(
-    gamma_matrix, lattice_points, selectivity_range, n_vec, spatial_step
-):
+def calculate_I(gamma_matrix, lattice_points, selectivity_range, n_vec, spatial_step):
     """
     Calculates the binding by multiplying the interaction matrix by the densities of the population being considered
     Args
@@ -163,8 +160,7 @@ def calculate_I(
         g_vec = g(lattice_points[i], lattice_points, selectivity_range)
         # Multiply each element in g_vec by the corresponding element in n_vec, the ith row of the interaction matrix and the spatial step, then sum over all elements
         binding_vector[i] = np.sum(
-            spatial_step
-            * np.multiply.reduce([g_vec, n_vec, gamma_matrix[i, :]])
+            spatial_step * np.multiply.reduce([g_vec, n_vec, gamma_matrix[i, :]])
         )
 
     return binding_vector
@@ -269,11 +265,11 @@ def plot_total_cells_evolution(time_vector, total_cancer_cells, total_t_cells):
     total_t_cells: array containing the total T-cells at which model is evaluated
     """
     # Plot results of total cells over time
-    plt.rcParams["savefig.directory"] = "./outputs" #os.chdir(os.path.dirname(dir_name))
+    plt.rcParams[
+        "savefig.directory"
+    ] = "./outputs"  # os.chdir(os.path.dirname(dir_name))
     plt.title("Evolution of Cancer cells and T-cells over time", fontsize=20)
-    plt.plot(
-        time_vector[:-1], total_cancer_cells, label="Cancer cells", color="r"
-    )
+    plt.plot(time_vector[:-1], total_cancer_cells, label="Cancer cells", color="r")
     plt.plot(time_vector[:-1], total_t_cells, label="T-cells", color="b")
     plt.xlabel("Time", fontsize=18)
     plt.ylabel("Total number of cells", fontsize=18)
@@ -381,12 +377,8 @@ def interaction_matrix_model(
         )  # Input transpose of gamma_matrix so that rows show the binding affinity of each T-cell
 
         # Use Kc, Kt, Jc, Jt and the matrix gamma to calculate R_c and R_t
-        R_c = calculate_Rc_interaction_matrix(
-            alpha_c, mu_c, Kc, zeta_c, gamma_Jc
-        )
-        R_t = calculate_Rt_interaction_matrix(
-            alpha_t, mu_t, Kt, zeta_t, gamma_Jt
-        )
+        R_c = calculate_Rc_interaction_matrix(alpha_c, mu_c, Kc, zeta_c, gamma_Jc)
+        R_t = calculate_Rt_interaction_matrix(alpha_t, mu_t, Kt, zeta_t, gamma_Jt)
 
         # Update vectors
         nC_k, nT_k = update_parameters(
@@ -406,9 +398,7 @@ def interaction_matrix_model(
 
     # Plot results for total cells over time
     if plot_cell_evolution:
-        plot_total_cells_evolution(
-            time_vector, total_cancer_cells, total_t_cells
-        )
+        plot_total_cells_evolution(time_vector, total_cancer_cells, total_t_cells)
 
     return nC_matrix, nT_matrix, u_vector, time_vector
 

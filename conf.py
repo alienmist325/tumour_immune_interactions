@@ -5,7 +5,8 @@ from types import SimpleNamespace
 interrupt = False
 debug = True
 path_to_data = "sim_data/sim.pickle"
-m_adjustment = True  # Make my simulation seem more like Marta's
+m_adjustment = True  # Make my simulation seem more like Marta's (But this can likely be removed, since it's just for small temporary changes)
+sim_state_init_type = "detailed"
 
 
 def get_sim_configuration():
@@ -21,4 +22,5 @@ def get_sim_configuration():
 def get_config_namespace_from_df_row(df: pd.DataFrame, config_name):
     config = df.loc[config_name]
     config = config.apply(pd.to_numeric)
+    config["name"] = config.name
     return SimpleNamespace(**config)

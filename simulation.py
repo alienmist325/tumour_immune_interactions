@@ -40,7 +40,7 @@ class PhenotypeStructure:
     def get_phenotype_by_id(self, id):
         return (id * self.step_size) - self.abs_max_value
 
-    def get_random_phenotype(self):
+    def get_random_phenotype_id(self):
         return random.randint(0, self.no_possible_values - 1)
 
     """
@@ -69,9 +69,7 @@ class Cell:
 
     @classmethod
     def random(self, phenotype_structure: PhenotypeStructure):
-        return Cell(
-            phenotype_structure.get_random_phenotype(), phenotype_structure
-        )
+        return Cell(phenotype_structure.get_random_phenotype_id(), phenotype_structure)
 
 
 class UniversalCellParams:
@@ -100,9 +98,7 @@ class Cells:  # Has a 1000x scaling
         self.universal_params = universal_params
 
     def compute_cells_at_each_phenotype(self):
-        self.no_cells_at_phenotype = (
-            {}
-        )  # Reset dictionary (inefficient, but clear)
+        self.no_cells_at_phenotype = {}  # Reset dictionary (inefficient, but clear)
 
         for cell in self.cells:
             if cell.phenotype_id in self.no_cells_at_phenotype:
@@ -192,9 +188,7 @@ class CellBundle:
 
     def kill_cells(self, phenotype_id, number):
         if phenotype_id not in self.cells_at_phenotype:
-            raise ValueError(
-                "No cells of this phenotype exist. Cannot kill cells."
-            )
+            raise ValueError("No cells of this phenotype exist. Cannot kill cells.")
         else:
             if self.cells_at_phenotype[phenotype_id] < number:
                 raise ValueError(
@@ -204,9 +198,7 @@ class CellBundle:
                 self.cells_at_phenotype[phenotype_id] -= number
 
     def mutate_int(self, phenotype_id, number, no_steps, direction):
-        new_phenotype_id = self.phen_struct.shift(
-            phenotype_id, no_steps, direction
-        )
+        new_phenotype_id = self.phen_struct.shift(phenotype_id, no_steps, direction)
         self.kill_cells(phenotype_id, number)
         self.create_cells(new_phenotype_id, number)
 
@@ -225,7 +217,7 @@ class CellBundle:
     ):
         cell_bundle = CellBundle(universal_params, phen_struct, {})
         for i in range(number):
-            cell_bundle.create_cells(phen_struct.get_random_phenotype(), 1)
+            cell_bundle.create_cells(phen_struct.get_random_phenotype_id(), 1)
         return cell_bundle
 
     @classmethod
@@ -250,10 +242,42 @@ class CellBundle:
         return new_cells
 
 
+class SimulationStateTypes:
+    @classmethod
+    def populations_only(
+        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
+    ):
+        state.CTL_cells_pop = len(CTL_cells)
+        state.tumour_cells_pop = len(tumour_cells)
+        return state
+
+    @classmethod
+    def whole_cell_bundles(
+        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
+    ):
+        state.CTL_cells_pop = len(CTL_cells)
+        state.tumour_cells_pop = len(tumour_cells)
+        state.CTL_cells = CTL_cells
+        state.tumour_cells = tumour_cells
+        return state
+
+
 class SimulationState:
-    def __init__(self, CTL_cells: Cells, tumour_cells: Cells):
-        self.CTL_cells_pop = len(CTL_cells)
-        self.tumour_cells_pop = len(tumour_cells)
+    type_to_init_dict = {
+        "default": SimulationStateTypes.populations_only,
+        "detailed": SimulationStateTypes.whole_cell_bundles,
+    }
+
+    def __init__(
+        self,
+        CTL_cells: CellBundle,
+        tumour_cells: CellBundle,
+    ):
+        from conf import sim_state_init_type
+
+        self.init_type = sim_state_init_type
+        initialiser = SimulationState.type_to_init_dict[self.init_type]
+        self = initialiser(self, CTL_cells, tumour_cells)
 
 
 class SimulationHistory:
@@ -261,12 +285,18 @@ class SimulationHistory:
 
     def __init__(self, history: list[SimulationState] = []):
         # Do I need to copy the simulation?
+        from conf import sim_state_init_type
+
         self.history = history
+        self.state_init_type = sim_state_init_type  # We hope this is the same as each sim state, but technically, it could not be
 
     def update(self, sim_state: SimulationState):
         self.history.append(sim_state)
 
         # We pickle and unpickle this object to do stuff.
+
+    def __iter__(self):
+        return self.history.__iter__()
 
 
 class Simulation:
@@ -283,7 +313,9 @@ class Simulation:
         TCR_affinity_range,
         TCR_binding_affinity,
         tumour_phenotypic_variation_probability,
+        config_name="Unspecified",
     ):
+        self.config_name = config_name
         self.final_time = final_time
         if conf.m_adjustment:
             scalar = 1  # 1.15, 2
@@ -353,13 +385,9 @@ class Simulation:
             ] = self.compute_phenotypic_separation_scaling(
                 phenotype_1_id, phenotype_2_id, range
             )
-        return self.phenotype_separation_scaling[
-            (phenotype_1_id, phenotype_2_id)
-        ]
+        return self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)]
 
-    def get_phenotype_natural_death_rate(
-        self, cells: CellBundle, phenotype_id
-    ):
+    def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype_id):
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
@@ -403,9 +431,7 @@ class Simulation:
             mutations = rng.binomial(
                 number, self.tumour_phenotypic_variation_probability
             )
-            mutate_lefts, mutate_rights = rng.multinomial(
-                mutations, [1 / 2.0] * 2
-            )
+            mutate_lefts, mutate_rights = rng.multinomial(mutations, [1 / 2.0] * 2)
             new_cells.mutate_left(phenotype_id, mutate_lefts)
             new_cells.mutate_right(phenotype_id, mutate_rights)
         return new_cells
@@ -416,9 +442,7 @@ class Simulation:
             importlib.reload(conf)
 
             if conf.interrupt:
-                print(
-                    "The simulation has been interrupted and will now safely save."
-                )
+                print("The simulation has been interrupted and will now safely save.")
                 return
 
             self.time_step += 1
@@ -438,23 +462,15 @@ class Simulation:
                 self.CTL_cells, self.get_phenotype_CTL_probabilities
             )
 
-            self.print(
-                "C: ", len(self.tumour_cells), " | T:", len(self.CTL_cells)
-            )
+            self.print("C: ", len(self.tumour_cells), " | T:", len(self.CTL_cells))
             self.print("Iteration done.")
-            self.print(
-                "Time step: ", self.time_step, "/", self.final_time_step
-            )
+            self.print("Time step: ", self.time_step, "/", self.final_time_step)
             # Post-calculation
 
-            self.history.update(
-                SimulationState(self.CTL_cells, self.tumour_cells)
-            )
+            self.history.update(SimulationState(self.CTL_cells, self.tumour_cells))
 
             # End it
-        self.print(
-            "The final time has been reached, so the simulation is over."
-        )
+        self.print("The final time has been reached, so the simulation is over.")
 
     def print(self, *string):
         if conf.debug:
@@ -482,9 +498,7 @@ class Simulation:
             * self.tumour_cells.universal_params.natural_prolif_base_rate
         )
         death = self.time_step_size * (
-            self.get_phenotype_natural_death_rate(
-                self.tumour_cells, phenotype_id
-            )
+            self.get_phenotype_natural_death_rate(self.tumour_cells, phenotype_id)
             + self.get_phenotype_interaction_induced_rate(
                 self.tumour_cells, self.CTL_cells, phenotype_id
             )
