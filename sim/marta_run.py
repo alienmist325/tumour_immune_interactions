@@ -1,6 +1,6 @@
 from marta_model import matrix_exponential_dist, interaction_matrix_model
 import numpy as np
-from conf import get_sim_configuration
+from inputs import get_sim_configuration
 
 
 print("blom")

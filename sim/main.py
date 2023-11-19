@@ -1,5 +1,5 @@
 from run import run
-from args import set_up_and_get_arguments
+from inputs import set_up_and_get_arguments
 from cProfile import Profile
 from pstats import SortKey, Stats
 from graphing import graph_from_path, savefig

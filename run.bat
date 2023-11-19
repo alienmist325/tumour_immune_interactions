@@ -1,2 +1,1 @@
-cd sim
-py main.py <..\inputs.txt >..\log.txt
+py sim\main.py -sf y -ow y -c Test >log.txt
