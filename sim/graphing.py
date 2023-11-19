@@ -1,5 +1,5 @@
-from .simulation import Simulation, SimulationState, CellBundle
-from .conf import path_to_data, path_to_output
+from simulation import Simulation, SimulationState, CellBundle
+from conf import path_to_data, path_to_output
 import numpy as np
 import pandas as pd
 from typing import Callable
