@@ -1,5 +1,5 @@
-from simulation import Simulation, SimulationState, CellBundle
-from conf import path_to_data
+from .simulation import Simulation, SimulationState, CellBundle
+from .conf import path_to_data, path_to_output
 import numpy as np
 import pandas as pd
 from typing import Callable
@@ -61,7 +61,7 @@ def fish(sim: Simulation, bundle_name):
         )
         parent_tree = []
         """
-        We need to construct the parent tree. I'm not sure quite how this works with mutations, since the parent could be any from the left/ right. 
+        We need to construct the parent tree. I'm not sure quite how this works with mutations, since the parent could be any from the left/ right.
         This means no phenotypes have no parents.. And hmm, one phenotype can have multiple phenotypes.
         To generate this, I'd want to collect all present phenotypes, then order chronologically, and assign parents in descending order.
         """
@@ -131,9 +131,13 @@ plt_fn_label = {
 }
 
 
-def savefig(sim: Simulation, plt_fn: Callable):
+def savefig(
+    sim: Simulation = None, plt_fn: Callable = graph, path_to_output=path_to_output
+):
+    if sim is None:
+        sim = get_sim()
     plt = plt_fn(sim)
-    out_path = f"outputs/output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
+    out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
     while os.path.exists(out_path):
         overwrite = input("Would you like to overwrite the existing file?")
         if overwrite == "y":

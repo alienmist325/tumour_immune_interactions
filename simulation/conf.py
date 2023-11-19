@@ -4,7 +4,8 @@ from types import SimpleNamespace
 
 interrupt = False
 debug = True
-path_to_data = "sim_data/sim.pickle"
+path_to_data = "..sim_data/sim.pickle"
+path_to_output = "..outputs/"
 m_adjustment = True  # Make my simulation seem more like Marta's (But this can likely be removed, since it's just for small temporary changes)
 sim_state_init_type = "detailed"
 

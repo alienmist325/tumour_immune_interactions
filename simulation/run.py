@@ -1,5 +1,5 @@
-from simulation import Simulation, UniversalCellParams
-from conf import path_to_data, get_sim_configuration
+from .simulation import Simulation, UniversalCellParams
+from .conf import path_to_data, get_sim_configuration
 
 
 def create_simulation():

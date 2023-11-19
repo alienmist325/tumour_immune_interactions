@@ -1,7 +1,7 @@
 from run import run
 from cProfile import Profile
 from pstats import SortKey, Stats
-from graphing import graph_from_path
+from graphing import graph_from_path, savefig
 
 """
 with Profile() as profile:
@@ -10,5 +10,5 @@ with Profile() as profile:
 """
 run()
 
-if input("Would you like to see the result? \n") == "y":
-    graph_from_path()
+if input("Would you like to save the graph?") == "y":
+    savefig()
