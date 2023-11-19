@@ -138,6 +138,7 @@ def savefig(
         sim = get_sim()
     plt = plt_fn(sim)
     out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
+    # I'm not going to worry about removing the inputs here, because this should never have a file in it, because it's a completely empty directory!
     while os.path.exists(out_path):
         overwrite = input("Would you like to overwrite the existing file?")
         if overwrite == "y":

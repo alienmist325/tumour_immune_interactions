@@ -2,29 +2,8 @@ from simulation import Simulation, UniversalCellParams
 from conf import path_to_data, get_sim_configuration
 
 
-def create_simulation():
-    cf = get_sim_configuration()
-    """
-    time_step = 0.05
-    final_time = 30
-    no_possible_phenotypes = 101
-
-    no_init_tumour_cells = 10000
-    no_init_CTL_cells = 10000
-
-    cf.tumour_natural_prolif_rate = 1.5
-    cf.tumour_natural_death_rate = 1.5e-6
-    cf.tumour_interaction_induced_rate = 5e-6
-
-    cf.CTL_natural_prolif_rate = 1.5
-    cf.CTL_natural_death_rate = 1.5e-6
-    cf.CTL_interaction_induced_rate = 5e-6
-
-    tumour_selectivity = 0.1  # in [0.1,2]
-    CTL_selectivity = 0.1  # in [0.1,2]
-    binding_affinity = 0.1  # in [0.1, 3.5]
-    affinity_range = 0.1  # in [0.1,2]
-    """
+def create_simulation(config_name=None):
+    cf = get_sim_configuration(config_name)
 
     cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
 
@@ -59,18 +38,21 @@ def create_simulation():
     return sim
 
 
-def run(path_to_data=path_to_data):
+def run(overwrite=None, config_name=None):
     create_new = False
     try:
         sim = Simulation.load_simulation(path_to_data)
-        if input("Would you like to overwrite this simulation?") == "y":
+        if overwrite is None:
+            overwrite = input("Would you like to overwrite this simulation?")
+
+        if overwrite == "y":
             create_new = True
     except IOError:
         create_new = True
 
     if create_new:
         print("Creating a new simulation.")
-        sim = create_simulation()
+        sim = create_simulation(config_name)
     sim.run()
 
     Simulation.save_simulation(path_to_data, sim)
