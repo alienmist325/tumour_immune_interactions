@@ -1,1 +1,0 @@
-py sim\main.py -sf y -ow y -c Test >log.txt
