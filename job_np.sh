@@ -6,8 +6,7 @@
 cd $PBS_O_WORKDIR
  
 module load tools/prod
-# module load SciPy-bundle/2022.05-foss-2022a
-# module load 
+module load SciPy-bundle/2022.05-foss-2022a
 source sim_venv/bin/activate
 
 python tests/numpy.py > log.txt
