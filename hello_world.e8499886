@@ -13,8 +13,11 @@ Loading SciPy-bundle/2022.05-foss-2022a
     SQLite/3.38.3-GCCcore-11.3.0 GMP/6.2.1-GCCcore-11.3.0
     libffi/3.4.2-GCCcore-11.3.0 Python/3.10.4-GCCcore-11.3.0
     pybind11/2.9.2-GCCcore-11.3.0
+Traceback (most recent call last):
+  File "/rds/general/user/am7220/home/tumour_immune_interactions/tests/numpy.py", line 1, in <module>
+    import numpy as np
+  File "/rds/general/user/am7220/home/tumour_immune_interactions/tests/numpy.py", line 3, in <module>
+    print(np.pi)
+AttributeError: partially initialized module 'numpy' has no attribute 'pi' (most likely due to a circular import)
 mkdir: cannot create directory ‘/rds/general/user/am7220/home/tumour_immune_interactions/job_data’: File exists
-cp: -r not specified; omitting directory 'job_data'
-cp: -r not specified; omitting directory 'outputs'
-cp: -r not specified; omitting directory '__pycache__'
-cp: -r not specified; omitting directory 'sim'
+cp: cannot copy a directory, 'job_data', into itself, '/rds/general/user/am7220/home/tumour_immune_interactions/job_data/job_data'
