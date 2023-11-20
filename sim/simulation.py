@@ -230,6 +230,10 @@ class CellBundle:
         for phenotype_id, number in cells.cells_at_phenotype.items():
             # print(number)
             # number = 100 * number
+            no_values = cells.phen_struct.no_possible_values
+            exclude_percent = 0.1
+            if phenotype_id not in range(no_values*exclude_percent, no_values*(1-exclude_percent)):
+                continue
             weights = get_phenotype_probabilities(phenotype_id)
             # print(weights)
             rng = np.random.default_rng()

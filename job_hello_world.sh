@@ -3,12 +3,17 @@
 #PBS -l walltime=00:01:00
 #PBS -N hello_world
  
-cd $PBS_O_WORKDIR
  
 module load tools/prod
-module load SciPy-bundle/2022.05-foss-2022a
+
+cd $PBS_O_WORKDIR
+cp tests/hello_world.py $TMPDIR
+
+cd $TMPDIR
 
 python tests/hello_world.py > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data
-cp * $HOME/tumour_immune_interactions/job_data -r
+cp log.txt $HOME/tumour_immune_interactions/job_data
+
+cd $HOME/tumour_immune_interactions/job_data
