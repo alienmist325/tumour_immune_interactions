@@ -8,10 +8,7 @@ cd $PBS_O_WORKDIR
 module load tools/prod
 module load SciPy-bundle/2022.05-foss-2022a
 
-# cp hello_world.py $TMPDIR
-# cd $TMPDIR
-
-python hello_world.py > log.txt
+python hello_world/hello_world.py > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data
 cp * $HOME/tumour_immune_interactions/job_data
