@@ -11,4 +11,4 @@ module load SciPy-bundle/2022.05-foss-2022a
 python hello_world/hello_world.py > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data
-cp * $HOME/tumour_immune_interactions/job_data
+cp * $HOME/tumour_immune_interactions/job_data -r
