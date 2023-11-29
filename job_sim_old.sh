@@ -15,11 +15,9 @@ module load Python/3.11.2-GCCcore-12.2.0-bare
 source sim_venv/bin/activate
 
 cd $TMPDIR
-for i in {1..10}
-do
-    python sim/main.py -sf y -ow y -c Al1_$i > log_$i.txt
-done
+python sim/main.py -sf y -ow y -c Config37 > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
-rm sim -r
-cp * $HOME/tumour_immune_interactions/job_data/$PBS_JOBID -r
+cp log.txt $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
+cp outputs/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/outputs -r
+cp sim_data/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/sim_data -r

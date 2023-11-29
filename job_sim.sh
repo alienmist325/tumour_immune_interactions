@@ -18,6 +18,5 @@ cd $TMPDIR
 python sim/main.py -sf y -ow y -c Config37 > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
-cp log.txt $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
-cp outputs/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/outputs -r
-cp sim_data/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/sim_data -r
+rm sim -r
+cp * $HOME/tumour_immune_interactions/job_data/$PBS_JOBID -r
