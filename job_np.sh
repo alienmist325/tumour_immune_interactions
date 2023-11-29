@@ -9,4 +9,4 @@ module load tools/prod
 module load Python/3.11.2-GCCcore-12.2.0-bare
 source sim_venv/bin/activate
 
-python tests/numpy.py > log.txt
+python tests/numpy_test.py > log.txt
