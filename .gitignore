@@ -4,3 +4,5 @@ Tumour_growth_model.ipynb
 *.pyc
 __pycache__/
 /sim_venv
+*.o*
+*.e*
