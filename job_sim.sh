@@ -6,17 +6,15 @@
 cd $PBS_O_WORKDIR
 mkdir $TMPDIR/sim
 mkdir $TMPDIR/sim_data
+mkdir $TMPDIR/outputs
 cp sim/* $TMPDIR/sim
-cp sim_data/sim.pickle $TMPDIR/sim_data
+cp shared_sim_data/sim.pickle $TMPDIR/sim_data
 
-
- 
 module load tools/prod
 module load Python/3.11.2-GCCcore-12.2.0-bare
 source sim_venv/bin/activate
 
 cd $TMPDIR
-
 python sim/main.py -sf y -ow y -c Test > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data
