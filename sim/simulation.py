@@ -232,7 +232,10 @@ class CellBundle:
             # number = 100 * number
             no_values = cells.phen_struct.no_possible_values
             exclude_percent = 0.1
-            if phenotype_id not in range(no_values*exclude_percent, no_values*(1-exclude_percent)):
+            if (
+                phenotype_id < no_values * exclude_percent
+                or phenotype_id > no_values * (1 - exclude_percent)
+            ):
                 continue
             weights = get_phenotype_probabilities(phenotype_id)
             # print(weights)
