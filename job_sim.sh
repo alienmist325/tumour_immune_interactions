@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l select=1:ncpus=1:mem=1gb
-#PBS -l walltime=00:01:00
+#PBS -l walltime=10:00:00
 #PBS -N simulation
  
 cd $PBS_O_WORKDIR
@@ -18,4 +18,6 @@ cd $TMPDIR
 python sim/main.py -sf y -ow y -c Config37 > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
-cp * $HOME/tumour_immune_interactions/job_data/$PBS_JOBID -r
+cp log.txt $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
+cp outputs/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/outputs -r
+cp sim_data/* $HOME/tumour_immune_interactions/job_data/$PBS_JOBID/sim_data -r
