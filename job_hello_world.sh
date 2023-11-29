@@ -15,5 +15,6 @@ python tests/hello_world.py > log.txt
 
 mkdir $HOME/tumour_immune_interactions/job_data
 cp log.txt $HOME/tumour_immune_interactions/job_data
+cp hello_world.* $HOME/tumour_immune_interactions/job_data
 
 cd $HOME/tumour_immune_interactions/job_data
