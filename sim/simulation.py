@@ -14,7 +14,6 @@ class PhenotypeStructure:
             -self.abs_max_value, self.abs_max_value, no_possible_values, True
         )
         self.id_range = range(no_possible_values)
-        print(len(self.range))
         self.step_size = 2 * abs_max_value / no_possible_values  # check this
         self.no_possible_values = no_possible_values
 

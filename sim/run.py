@@ -5,6 +5,7 @@ from inputs import get_sim_configuration
 
 def create_simulation(config_name=None):
     cf = get_sim_configuration(config_name)
+    print(config_name)
 
     cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
 
