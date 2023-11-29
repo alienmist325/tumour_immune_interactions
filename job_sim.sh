@@ -15,7 +15,7 @@ module load Python/3.11.2-GCCcore-12.2.0-bare
 source sim_venv/bin/activate
 
 cd $TMPDIR
-python sim/main.py -sf y -ow y -c Test > log.txt
+python sim/main.py -sf y -ow y -c Config37 > log.txt
 
-mkdir $HOME/tumour_immune_interactions/job_data/$JOB_ID
-cp * $HOME/tumour_immune_interactions/job_data/$JOB_ID -r
+mkdir $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
+cp * $HOME/tumour_immune_interactions/job_data/$PBS_JOBID -r
