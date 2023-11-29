@@ -17,5 +17,5 @@ source sim_venv/bin/activate
 cd $TMPDIR
 python sim/main.py -sf y -ow y -c Test > log.txt
 
-mkdir $HOME/tumour_immune_interactions/job_data
-cp * $HOME/tumour_immune_interactions/job_data -r
+mkdir $HOME/tumour_immune_interactions/job_data/$JOB_ID
+cp * $HOME/tumour_immune_interactions/job_data/$JOB_ID -r
