@@ -205,9 +205,9 @@ class SimulationState:
     ):
         from conf import sim_state_init_type
 
-        self.init_type = sim_state_init_type
-        initialiser = SimulationState.type_to_init_dict[self.init_type]
+        initialiser = SimulationState.type_to_init_dict[sim_state_init_type]
         self = initialiser(self, CTL_cells, tumour_cells)
+        self.init_type = sim_state_init_type
 
 
 class SimulationHistory:
@@ -285,7 +285,7 @@ class Simulation:
         pass
 
     def compute_phenotypic_separation_scaling(
-        self, phenotype_1_id, phenotype_2_id, range, distance_type="circular"
+        self, phenotype_1_id, phenotype_2_id, range, distance_type="line"
     ):
         phenotype_1 = self.phen_struct.get_phenotype_by_id(phenotype_1_id)
         phenotype_2 = self.phen_struct.get_phenotype_by_id(phenotype_2_id)
