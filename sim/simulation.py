@@ -8,6 +8,11 @@ from typing import Self
 
 
 class PhenotypeStructure:
+    """
+    Phenotypes are in the range [0,1], and are floats
+    Phenotype IDs are in the range [0, no_possible_values - 1], and are integers
+    """
+
     def __init__(self, abs_max_value, no_possible_values):
         self.abs_max_value = abs_max_value
         self.range = np.linspace(
@@ -90,8 +95,10 @@ class CellBundle:
         return sum(self.cells_at_phenotype.values())
 
     def create_cells(self, phenotype_id, number):
+        """
         if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, phenotype_id):
             return
+        """
 
         if phenotype_id not in self.cells_at_phenotype:
             self.cells_at_phenotype[phenotype_id] = number
@@ -111,9 +118,12 @@ class CellBundle:
 
     def mutate_int(self, phenotype_id, number, no_steps, direction):
         new_phenotype_id = self.phen_struct.shift(phenotype_id, no_steps, direction)
+
+        self.kill_cells(phenotype_id, number)
+        """
         if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, new_phenotype_id):
             return
-        self.kill_cells(phenotype_id, number)
+        """
         self.create_cells(new_phenotype_id, number)
 
     def mutate_left(self, phenotype_id, number):
@@ -144,11 +154,12 @@ class CellBundle:
         for phenotype_id, number in cells.cells_at_phenotype.items():
             # print(number)
             # number = 100 * number
-
+            """
             if PhenotypeStructure.is_excluded_phenotype(
                 cells.phen_struct, phenotype_id
             ):
                 continue
+            """
             weights = get_phenotype_probabilities(phenotype_id)
             # print(weights)
             rng = np.random.default_rng()
@@ -274,20 +285,33 @@ class Simulation:
         pass
 
     def compute_phenotypic_separation_scaling(
-        self,
-        phenotype_1_id,
-        phenotype_2_id,
-        range,
+        self, phenotype_1_id, phenotype_2_id, range, distance_type="circular"
     ):
         phenotype_1 = self.phen_struct.get_phenotype_by_id(phenotype_1_id)
         phenotype_2 = self.phen_struct.get_phenotype_by_id(phenotype_2_id)
-        if abs(phenotype_1 - phenotype_2) <= range:
+        if distance_type == "line":
+            distance = abs(phenotype_1 - phenotype_2)
+        if distance_type == "circular":
+            distance = Simulation.get_circular_distance(phenotype_1, phenotype_2)
+        if distance <= range:
             return 1 / (
                 min(phenotype_1 + range, self.phen_struct.abs_max_value)
                 - max(phenotype_1 - range, -self.phen_struct.abs_max_value)
             )
         else:
             return 0
+
+    @classmethod
+    def get_circular_distance(self, a, b):
+        """
+        Get the circular distance on [0,1] between a and b.
+        """
+        if b < a:
+            # Switch so a < b
+            temp = a
+            a = b
+            b = temp
+        return min(abs(b - a), abs(a + 1 - b))
 
     def get_phenotypic_separation_scaling(
         self,
