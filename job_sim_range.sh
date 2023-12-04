@@ -17,7 +17,7 @@ source sim_venv/bin/activate
 cd $TMPDIR
 for i in {1..10}
 do
-    python sim/main.py -sf y -ow y -c Al1_$i > log_$i.txt
+    python sim/main.py -sf y -ow y -c Al1_5_7_$i > log_$i.txt
 done
 
 mkdir $HOME/tumour_immune_interactions/job_data/$PBS_JOBID
