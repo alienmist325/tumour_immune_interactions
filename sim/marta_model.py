@@ -3,6 +3,10 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import os
 
+"""
+A read-only version of Marta's simulation.
+"""
+
 
 def create_u_vector(L, num_subintervals_lattice):
     """

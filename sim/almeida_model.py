@@ -47,11 +47,6 @@ class PhenotypeStructure:
     def get_random_phenotype_id(self):
         return random.randint(0, self.no_possible_values - 1)
 
-    def get_random_mutation(self, phenotype_id):
-        no_steps = 1
-        random.choice()
-        return self.phen_struct.shift(phenotype_id, no_steps, direction)
-
     @classmethod
     def is_excluded_phenotype(
         self, phen_struct: Self, phenotype_id: int, exclude_percent=0.1
@@ -120,12 +115,6 @@ class CellBundle:
                 )
             else:
                 self.cells_at_phenotype[phenotype_id] -= number
-
-    def mutate(self, phenotype_id, number):
-        for i in range(number):
-            new_phenotype_id = self.phen_struct.get_random_mutation(phenotype_id)
-            self.kill_cells(phenotype_id, 1)
-            self.create_cells(phenotype_id, 1)
 
     def mutate_int(self, phenotype_id, number, no_steps, direction):
         new_phenotype_id = self.phen_struct.shift(

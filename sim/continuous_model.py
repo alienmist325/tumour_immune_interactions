@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import os
 
 
+"""
+A modification of Marta's simulation.
+"""
+
+
 def create_u_vector(L, num_subintervals_lattice):
     """
     Creates lattice of points for simulation
