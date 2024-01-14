@@ -5,9 +5,40 @@ import conf
 import importlib
 import pickle
 from typing import Self
+from abc import ABC, abstractmethod
+from functools import singledispatch
 
 
-class PhenotypeStructure:
+class PhenotypeStructure(ABC):
+    @abstractmethod
+    def get_random_phenotype_id(self, id):
+        """
+        Generate a valid phenotype id.
+        """
+        pass
+
+    @abstractmethod
+    def get_random_mutation(self, id):
+        """
+        Get a possible mutation of the phenotype
+        """
+        pass
+
+    # IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
+    # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
+
+    @classmethod
+    @abstractmethod
+    @singledispatch
+    def get_interaction_scaling(self, id_1, id_2, struct_1: type, struct_2: type):
+        pass
+
+
+class SequencePhenotypeStructure(PhenotypeStructure):
+    pass
+
+
+class LatticePhenotypeStructure(PhenotypeStructure):
     """
     Phenotypes are in the range [0,1], and are floats
     Phenotype IDs are in the range [0, no_possible_values - 1], and are integers
@@ -21,6 +52,7 @@ class PhenotypeStructure:
         self.id_range = range(no_possible_values)
         self.step_size = 2 * abs_max_value / no_possible_values  # check this
         self.no_possible_values = no_possible_values
+        self.phenotype_separation_scaling = {}
 
     """
     def shift(self, phen, no_steps, direction):
@@ -47,10 +79,10 @@ class PhenotypeStructure:
     def get_random_phenotype_id(self):
         return random.randint(0, self.no_possible_values - 1)
 
-    def get_random_mutation(self, phenotype_id):
+    def get_random_mutation(self, id):
         no_steps = 1
-        random.choice()
-        return self.phen_struct.shift(phenotype_id, no_steps, direction)
+        direction = random.choice([-1, 1])
+        return self.shift(id, no_steps, direction)
 
     @classmethod
     def is_excluded_phenotype(
@@ -61,6 +93,55 @@ class PhenotypeStructure:
             phenotype_id < no_values * exclude_percent
             or phenotype_id > no_values * (1 - exclude_percent)
         )
+
+    @classmethod
+    def get_circular_distance(self, a, b):
+        """
+        Get the circular distance on [0,1] between a and b.
+        """
+        if b < a:
+            # Switch so a < b
+            temp = a
+            a = b
+            b = temp
+        return min(abs(b - a), abs(a + 1 - b))
+
+    def compute_interaction_scaling(
+        self, phenotype_1_id, phenotype_2_id, range, distance_type="line"
+    ):
+        """
+        Return 0 if phenotypes are out of the selectivity range; otherwise return a constant, modified to account for the boundary.
+        """
+        phenotype_1 = self.get_phenotype_by_id(phenotype_1_id)
+        phenotype_2 = self.get_phenotype_by_id(phenotype_2_id)
+        if distance_type == "line":
+            distance = abs(phenotype_1 - phenotype_2)
+        if distance_type == "circular":
+            distance = LatticePhenotypeStructure.get_circular_distance(
+                phenotype_1, phenotype_2
+            )
+        if distance <= range:
+            return 1 / (
+                min(phenotype_1 + range, self.abs_max_value)
+                - max(phenotype_1 - range, -self.abs_max_value)
+            )
+        else:
+            return 0
+
+    def get_interaction_scaling(
+        self,
+        phenotype_1_id,
+        phenotype_2_id,
+        range,
+    ):
+        if (
+            phenotype_1_id,
+            phenotype_2_id,
+        ) not in self.phenotype_separation_scaling:
+            self.phenotype_separation_scaling[
+                (phenotype_1_id, phenotype_2_id)
+            ] = self.compute_interaction_scaling(phenotype_1_id, phenotype_2_id, range)
+        return self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)]
 
     """
     def get_random_phenotype(self):
@@ -125,25 +206,7 @@ class CellBundle:
         for i in range(number):
             new_phenotype_id = self.phen_struct.get_random_mutation(phenotype_id)
             self.kill_cells(phenotype_id, 1)
-            self.create_cells(phenotype_id, 1)
-
-    def mutate_int(self, phenotype_id, number, no_steps, direction):
-        new_phenotype_id = self.phen_struct.shift(
-            phenotype_id, no_steps, direction
-        )  # If on the boundary, the new phenotype is the _same_ as the old phenotype. Indeed, this aligns with Almeida requiring "abortion" of the mutation if it moves out of the region.
-
-        self.kill_cells(phenotype_id, number)
-        """
-        if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, new_phenotype_id):
-            return
-        """
-        self.create_cells(new_phenotype_id, number)
-
-    def mutate_left(self, phenotype_id, number):
-        self.mutate_int(phenotype_id, number, 1, -1)
-
-    def mutate_right(self, phenotype_id, number):
-        self.mutate_int(phenotype_id, number, 1, 1)
+            self.create_cells(new_phenotype_id, 1)
 
     @classmethod
     def random(
@@ -211,11 +274,7 @@ class SimulationState:
         "detailed": SimulationStateTypes.whole_cell_bundles,
     }
 
-    def __init__(
-        self,
-        CTL_cells: CellBundle,
-        tumour_cells: CellBundle,
-    ):
+    def __init__(self, CTL_cells: CellBundle, tumour_cells: CellBundle):
         from conf import sim_state_init_type
 
         initialiser = SimulationState.type_to_init_dict[sim_state_init_type]
@@ -286,7 +345,6 @@ class Simulation:
 
         self.phenotype_tumour_probabilities = {}
         self.phenotype_CTL_probabilities = {}
-        self.phenotype_separation_scaling = {}
 
         self.history = SimulationHistory()
         self.temp_scalar = 1
@@ -297,58 +355,11 @@ class Simulation:
     def get_average_immune_score(self):
         pass
 
-    def compute_interaction_scaling(
-        self, phenotype_1_id, phenotype_2_id, range, distance_type="line"
-    ):
-        """
-        Return 0 if phenotypes are out of the selectivity range; otherwise return a constant, modified to account for the boundary.
-        """
-        phenotype_1 = self.phen_struct.get_phenotype_by_id(phenotype_1_id)
-        phenotype_2 = self.phen_struct.get_phenotype_by_id(phenotype_2_id)
-        if distance_type == "line":
-            distance = abs(phenotype_1 - phenotype_2)
-        if distance_type == "circular":
-            distance = Simulation.get_circular_distance(phenotype_1, phenotype_2)
-        if distance <= range:
-            return 1 / (
-                min(phenotype_1 + range, self.phen_struct.abs_max_value)
-                - max(phenotype_1 - range, -self.phen_struct.abs_max_value)
-            )
-        else:
-            return 0
-
-    @classmethod
-    def get_circular_distance(self, a, b):
-        """
-        Get the circular distance on [0,1] between a and b.
-        """
-        if b < a:
-            # Switch so a < b
-            temp = a
-            a = b
-            b = temp
-        return min(abs(b - a), abs(a + 1 - b))
-
-    def get_interaction_scaling(
-        self,
-        phenotype_1_id,
-        phenotype_2_id,
-        range,
-    ):
-        if (
-            phenotype_1_id,
-            phenotype_2_id,
-        ) not in self.phenotype_separation_scaling:
-            self.phenotype_separation_scaling[
-                (phenotype_1_id, phenotype_2_id)
-            ] = self.compute_interaction_scaling(phenotype_1_id, phenotype_2_id, range)
-        return self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)]
-
     def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype_id):
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
-                self.get_interaction_scaling(
+                PhenotypeStructure.get_interaction_scaling(
                     phenotype_id,
                     other_phenotype_id,
                     cells.universal_params.selectivity,
@@ -385,12 +396,10 @@ class Simulation:
         new_cells = deepcopy(cells)
         for phenotype_id, number in cells.cells_at_phenotype.items():
             rng = np.random.default_rng()
-            mutations = rng.binomial(
+            no_mutations = rng.binomial(
                 number, self.tumour_phenotypic_variation_probability
             )
-            mutate_lefts, mutate_rights = rng.multinomial(mutations, [1 / 2.0] * 2)
-            new_cells.mutate_left(phenotype_id, mutate_lefts)
-            new_cells.mutate_right(phenotype_id, mutate_rights)
+            new_cells.mutate(phenotype_id, no_mutations)
         return new_cells
 
     def run(self):
