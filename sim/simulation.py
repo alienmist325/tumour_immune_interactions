@@ -31,7 +31,7 @@ class PhenotypeStructure(ABC):
         """
         return phenotype.id  # By default, these are the same
 
-    # IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
+    # (Not anymore) IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
     # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
 
     @classmethod
@@ -83,9 +83,6 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         Get the value associated with a phenotype id.
         """
         return phenotype.id  # By default, these are the same
-
-    # IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
-    # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
 
     @classmethod
     def get_affinity_distance(phen_1, phen_2, binding_affinity_matrix):
