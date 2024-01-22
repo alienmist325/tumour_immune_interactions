@@ -11,31 +11,114 @@ from functools import singledispatch
 
 class PhenotypeStructure(ABC):
     @abstractmethod
-    def get_random_phenotype_id(self, id):
+    def get_random_phenotype(self):
         """
         Generate a valid phenotype id.
         """
         pass
 
     @abstractmethod
-    def get_random_mutation(self, id):
+    def get_random_mutation(self, phenotype):
         """
-        Get a possible mutation of the phenotype
+        Get a possible mutation of the phenotype.
         """
         pass
+
+    @abstractmethod
+    def get_value(self, phenotype):
+        """
+        Get the value associated with a phenotype id.
+        """
+        return phenotype.id  # By default, these are the same
 
     # IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
     # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
 
     @classmethod
     @abstractmethod
-    @singledispatch
-    def get_interaction_scaling(self, id_1, id_2, struct_1: type, struct_2: type):
-        pass
+    def get_interaction_scaling(self, phen_1, phen_2):
+        if type(phen_1.struct) is type(phen_2.struct):
+            type(phen_1.struct).get_interaction_scaling(phen_1, phen_2)
+        else:
+            return -1
+
+
+class Phenotype:
+    def __init__(self, struct: PhenotypeStructure, id):
+        # Notice we will have a problem if our value isn't one that compares nicely (e.g. float), so we have to use a "comparable" id here instead
+        self.struct = struct
+        self.id = id
+
+    def __eq__(self, other):
+        return (self.struct == other.struct) and (self.id == other.id)
+
+    def get_value(self):
+        return self.struct.get_value(self)
+
+    def get_random_mutation(self):
+        return self.struct.get_random_mutation(self)
+
+    def __hash__(self):
+        return hash((self.struct, self.id))
 
 
 class SequencePhenotypeStructure(PhenotypeStructure):
-    pass
+    def __init__(self, sequences):
+        self.seqeuences = sequences
+
+    def get_random_phenotype(self):
+        """
+        Generate a valid phenotype id.
+        """
+        pass
+
+    def get_random_mutation(self, phenotype):
+        """
+        Get a possible mutation of the phenotype.
+        """
+        pass
+
+    def get_value(self, phenotype):
+        """
+        Get the value associated with a phenotype id.
+        """
+        return phenotype.id  # By default, these are the same
+
+    # IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
+    # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
+
+    @classmethod
+    def get_affinity_distance(phen_1, phen_2, binding_affinity_matrix):
+        # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
+        pass
+
+    @classmethod
+    def get_sequence_difference(phen_1, phen_2, sequence_matrix):
+        pass
+
+    @classmethod
+    def get_interaction_function(self):
+        return (
+            Self.get_sequence_distance
+        )  # or is it better to do self.etc rather than the class method? Which works?
+
+    @classmethod
+    def get_standard_interaction_data(self):
+        # An example of some data
+        # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
+        sequence_matrix = np.identity(10)  # TODO: fix this
+        return sequence_matrix
+
+    @classmethod
+    def get_cross_interaction_function(self):
+        return Self.get_affinity_distance
+
+    @classmethod
+    def get_standard_cross_interaction_data(self):
+        # An example of some data
+        # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
+        affinity_matrix = np.identity(10)  # TODO: fix this
+        return affinity_matrix
 
 
 class LatticePhenotypeStructure(PhenotypeStructure):
@@ -51,8 +134,7 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         )
         self.id_range = range(no_possible_values)
         self.step_size = 2 * abs_max_value / no_possible_values  # check this
-        self.no_possible_values = no_possible_values
-        self.phenotype_separation_scaling = {}
+        self.no_possible_values = no_possible_values  # For an id
 
     """
     def shift(self, phen, no_steps, direction):
@@ -65,29 +147,31 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         return phen
     """
 
-    def shift(self, phen_id, no_steps, direction):
+    def shift(self, phen: Phenotype, no_steps, direction):
+        phen_id = phen.id
         phen_id += no_steps * direction
         if phen_id > self.no_possible_values - 1:
             phen_id = self.no_possible_values - 1
         elif phen_id < 0:
             phen_id = 0
-        return phen_id
+        return Phenotype(phen.struct, phen_id)
 
-    def get_phenotype_by_id(self, id):
+    def get_value(self, phen: Phenotype):
+        id = phen.id
         return (id * self.step_size) - self.abs_max_value
 
-    def get_random_phenotype_id(self):
-        return random.randint(0, self.no_possible_values - 1)
+    def get_random_phenotype(self):
+        return Phenotype(self, random.randint(0, self.no_possible_values - 1))
 
-    def get_random_mutation(self, id):
+    def get_random_mutation(self, phenotype: Phenotype):
         no_steps = 1
         direction = random.choice([-1, 1])
-        return self.shift(id, no_steps, direction)
+        return self.shift(phenotype, no_steps, direction)
 
     @classmethod
-    def is_excluded_phenotype(
-        self, phen_struct: Self, phenotype_id: int, exclude_percent=0.1
-    ):
+    def is_excluded_phenotype(self, phenotype: Phenotype, exclude_percent=0.1):
+        phen_struct = phenotype.struct
+        phenotype_id = phenotype.id
         no_values = phen_struct.no_possible_values
         return (
             phenotype_id < no_values * exclude_percent
@@ -106,14 +190,28 @@ class LatticePhenotypeStructure(PhenotypeStructure):
             b = temp
         return min(abs(b - a), abs(a + 1 - b))
 
+    @classmethod
+    def get_interaction_function(self):
+        return (
+            Self.compute_interaction_scaling
+        )  # or is it better to do self.etc rather than the class method? Which works?
+
+    @classmethod
+    def get_standard_interaction_data(self):
+        # An example of some data
+        # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
+        distance_type = "length"
+        return distance_type
+
+    @classmethod
     def compute_interaction_scaling(
-        self, phenotype_1_id, phenotype_2_id, range, distance_type="line"
+        self, phenotype_1_, phenotype_2_, range, distance_type="line"
     ):
         """
         Return 0 if phenotypes are out of the selectivity range; otherwise return a constant, modified to account for the boundary.
         """
-        phenotype_1 = self.get_phenotype_by_id(phenotype_1_id)
-        phenotype_2 = self.get_phenotype_by_id(phenotype_2_id)
+        phenotype_1 = phenotype_1_.get_value()
+        phenotype_2 = phenotype_2_.get_value()
         if distance_type == "line":
             distance = abs(phenotype_1 - phenotype_2)
         if distance_type == "circular":
@@ -128,27 +226,46 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         else:
             return 0
 
-    def get_interaction_scaling(
-        self,
-        phenotype_1_id,
-        phenotype_2_id,
-        range,
-    ):
-        if (
-            phenotype_1_id,
-            phenotype_2_id,
-        ) not in self.phenotype_separation_scaling:
-            self.phenotype_separation_scaling[
-                (phenotype_1_id, phenotype_2_id)
-            ] = self.compute_interaction_scaling(phenotype_1_id, phenotype_2_id, range)
-        return self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)]
-
     """
     def get_random_phenotype(self):
         return (
             random.randint(0, self.no_possible_values - 1) * self.step_size
         ) - self.abs_max_value
     """
+
+
+class PhenotypeInteractions:
+    """
+    Outlines how the different PhenotypeStructure objects in the program interact with each other.
+
+    interaction_data : dict from (struct1, struct2) to data
+    """
+
+    def __init__(self, interaction_data: dict, interaction_functions: dict):
+        self.interaction_data = interaction_data
+        self.interaction_functions = interaction_functions
+        self.phenotype_separation_scaling = {}
+
+    def compute_interaction_scaling(self, phen_1: Phenotype, phen_2: Phenotype, range):
+        struct_tuple = (phen_1.struct, phen_2.struct)
+        data = self.interaction_data[struct_tuple]
+        function = self.interaction_functions[struct_tuple]
+        function(phen_1, phen_2, range, data)
+
+    def get_interaction_scaling(
+        self,
+        phenotype_1,
+        phenotype_2,
+        range,
+    ):
+        if (
+            phenotype_1,
+            phenotype_2,
+        ) not in self.phenotype_separation_scaling:
+            self.phenotype_separation_scaling[
+                (phenotype_1, phenotype_2)
+            ] = self.compute_interaction_scaling(phenotype_1, phenotype_2, range)
+        return self.phenotype_separation_scaling[(phenotype_1, phenotype_2)]
 
 
 class UniversalCellParams:
@@ -180,33 +297,33 @@ class CellBundle:
     def __len__(self):
         return sum(self.cells_at_phenotype.values())
 
-    def create_cells(self, phenotype_id, number):
+    def create_cells(self, phenotype: Phenotype, number):
         """
-        if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, phenotype_id):
+        if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, phenotype):
             return
         """
 
-        if phenotype_id not in self.cells_at_phenotype:
-            self.cells_at_phenotype[phenotype_id] = number
+        if phenotype not in self.cells_at_phenotype:
+            self.cells_at_phenotype[phenotype] = number
         else:
-            self.cells_at_phenotype[phenotype_id] += number
+            self.cells_at_phenotype[phenotype] += number
 
-    def kill_cells(self, phenotype_id, number):
-        if phenotype_id not in self.cells_at_phenotype:
+    def kill_cells(self, phenotype: Phenotype, number):
+        if phenotype not in self.cells_at_phenotype:
             raise ValueError("No cells of this phenotype exist. Cannot kill cells.")
         else:
-            if self.cells_at_phenotype[phenotype_id] < number:
+            if self.cells_at_phenotype[phenotype] < number:
                 raise ValueError(
                     "Not enough cells of this phenotype exist. Cannot kill cells."
                 )
             else:
-                self.cells_at_phenotype[phenotype_id] -= number
+                self.cells_at_phenotype[phenotype] -= number
 
-    def mutate(self, phenotype_id, number):
+    def mutate(self, phenotype: Phenotype, number):
         for i in range(number):
-            new_phenotype_id = self.phen_struct.get_random_mutation(phenotype_id)
-            self.kill_cells(phenotype_id, 1)
-            self.create_cells(new_phenotype_id, 1)
+            new_phenotype = phenotype.get_random_mutation()
+            self.kill_cells(phenotype, 1)
+            self.create_cells(new_phenotype, 1)
 
     @classmethod
     def random(
@@ -217,7 +334,7 @@ class CellBundle:
     ):
         cell_bundle = CellBundle(universal_params, phen_struct, {})
         for i in range(number):
-            cell_bundle.create_cells(phen_struct.get_random_phenotype_id(), 1)
+            cell_bundle.create_cells(phen_struct.get_random_phenotype(), 1)
         return cell_bundle
 
     @classmethod
@@ -227,22 +344,22 @@ class CellBundle:
         get_phenotype_probabilities,
     ):
         new_cells = deepcopy(cells)
-        for phenotype_id, number in cells.cells_at_phenotype.items():
+        for phenotype, number in cells.cells_at_phenotype.items():
             # print(number)
             # number = 100 * number
             """
             if PhenotypeStructure.is_excluded_phenotype(
-                cells.phen_struct, phenotype_id
+                cells.phen_struct, phenotype
             ):
                 continue
             """
-            weights = get_phenotype_probabilities(phenotype_id)
+            weights = get_phenotype_probabilities(phenotype)
             # print(weights)
             rng = np.random.default_rng()
             births, deaths, quiescences = rng.multinomial(number, weights)
             # print(births, "|", deaths, "|", quiescences)
-            new_cells.create_cells(phenotype_id, births)
-            new_cells.kill_cells(phenotype_id, deaths)
+            new_cells.create_cells(phenotype, births)
+            new_cells.kill_cells(phenotype, deaths)
             # print(len(new_cells))
             # Could just subtract and do this in one step
         return new_cells
@@ -346,8 +463,45 @@ class Simulation:
         self.phenotype_tumour_probabilities = {}
         self.phenotype_CTL_probabilities = {}
 
+        self.phenotype_separation_scaling = {}
+
         self.history = SimulationHistory()
         self.temp_scalar = 1
+
+        # Something like this (implement properly)
+        sequence_matrix = np.identity(10)
+        affinity_matrix = np.identity(10)
+
+        self.tumour_struct = SequencePhenotypeStructure([])
+        self.CTL_struct = SequencePhenotypeStructure([])
+
+        ts = self.tumour_struct
+        cs = self.CTL_struct
+        interaction_data = {}
+
+        interaction_data[(ts, ts)] = sequence_matrix
+        interaction_data[(cs, cs)] = sequence_matrix
+        interaction_data[(ts, cs)] = affinity_matrix
+        interaction_data[(cs, ts)] = np.transpose(affinity_matrix)
+
+        interaction_function = {}
+        interaction_function[
+            (ts, ts)
+        ] = SequencePhenotypeStructure.get_interaction_function()
+        interaction_function[
+            (cs, cs)
+        ] = SequencePhenotypeStructure.get_interaction_function()
+        interaction_function[
+            (ts, cs)
+        ] = SequencePhenotypeStructure.get_cross_interaction_function()
+        interaction_function[
+            (cs, ts)
+        ] = SequencePhenotypeStructure.get_cross_interaction_function()
+
+        self.phen_int = PhenotypeInteractions(
+            interaction_functions=interaction_function,
+            interaction_data=interaction_data,
+        )
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
@@ -355,17 +509,17 @@ class Simulation:
     def get_average_immune_score(self):
         pass
 
-    def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype_id):
+    def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype: Phenotype):
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
-                PhenotypeStructure.get_interaction_scaling(
-                    phenotype_id,
-                    other_phenotype_id,
+                self.phen_int.get_interaction_scaling(
+                    phenotype,
+                    other_phenotype,
                     cells.universal_params.selectivity,
                 )
                 * cells_at_phenotype
-                for other_phenotype_id, cells_at_phenotype in cells.cells_at_phenotype.items()
+                for other_phenotype, cells_at_phenotype in cells.cells_at_phenotype.items()
             ]
         )
 
@@ -373,7 +527,7 @@ class Simulation:
         self,
         cells: CellBundle,
         other_cells: CellBundle,
-        phenotype_id,
+        phenotype: Phenotype,
     ):
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
         return (
@@ -381,25 +535,25 @@ class Simulation:
             * self.TCR_binding_affinity
             * sum(
                 [
-                    self.get_interaction_scaling(
-                        phenotype_id,
-                        other_phenotype_id,
+                    self.phen_int.get_interaction_scaling(
+                        phenotype,
+                        other_phenotype,
                         self.TCR_affinity_range,
                     )
                     * other_cells_at_phenotype
-                    for other_phenotype_id, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
+                    for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
                 ]
             )
         )
 
     def mutate(self, cells: CellBundle):
         new_cells = deepcopy(cells)
-        for phenotype_id, number in cells.cells_at_phenotype.items():
+        for phenotype, number in cells.cells_at_phenotype.items():
             rng = np.random.default_rng()
             no_mutations = rng.binomial(
                 number, self.tumour_phenotypic_variation_probability
             )
-            new_cells.mutate(phenotype_id, no_mutations)
+            new_cells.mutate(phenotype, no_mutations)
         return new_cells
 
     def run(self):
@@ -442,46 +596,46 @@ class Simulation:
         if conf.debug:
             print(*string)
 
-    def get_phenotype_tumour_probabilities(self, phenotype_id):
-        if phenotype_id not in self.phenotype_tumour_probabilities:
+    def get_phenotype_tumour_probabilities(self, phenotype):
+        if phenotype not in self.phenotype_tumour_probabilities:
             self.phenotype_tumour_probabilities[
-                phenotype_id
-            ] = self.compute_phenotype_tumour_probabilities(phenotype_id)
+                phenotype
+            ] = self.compute_phenotype_tumour_probabilities(phenotype)
 
-        return self.phenotype_tumour_probabilities[phenotype_id]
+        return self.phenotype_tumour_probabilities[phenotype]
 
-    def get_phenotype_CTL_probabilities(self, phenotype_id):
-        if phenotype_id not in self.phenotype_CTL_probabilities:
+    def get_phenotype_CTL_probabilities(self, phenotype):
+        if phenotype not in self.phenotype_CTL_probabilities:
             self.phenotype_CTL_probabilities[
-                phenotype_id
-            ] = self.compute_phenotype_CTL_probabilities(phenotype_id)
+                phenotype
+            ] = self.compute_phenotype_CTL_probabilities(phenotype)
 
-        return self.phenotype_CTL_probabilities[phenotype_id]
+        return self.phenotype_CTL_probabilities[phenotype]
 
-    def compute_phenotype_tumour_probabilities(self, phenotype_id):
+    def compute_phenotype_tumour_probabilities(self, phenotype):
         birth = (
             self.time_step_size
             * self.tumour_cells.universal_params.natural_prolif_base_rate
         )
         death = self.time_step_size * (
-            self.get_phenotype_natural_death_rate(self.tumour_cells, phenotype_id)
+            self.get_phenotype_natural_death_rate(self.tumour_cells, phenotype)
             + self.get_phenotype_interaction_induced_rate(
-                self.tumour_cells, self.CTL_cells, phenotype_id
+                self.tumour_cells, self.CTL_cells, phenotype
             )
         )
         birth = self.temp_scalar * birth
         death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
 
-    def compute_phenotype_CTL_probabilities(self, phenotype_id):
+    def compute_phenotype_CTL_probabilities(self, phenotype):
         birth = self.time_step_size * (
             self.CTL_cells.universal_params.natural_prolif_base_rate
             + self.get_phenotype_interaction_induced_rate(
-                self.CTL_cells, self.tumour_cells, phenotype_id
+                self.CTL_cells, self.tumour_cells, phenotype
             )
         )
         death = self.time_step_size * self.get_phenotype_natural_death_rate(
-            self.CTL_cells, phenotype_id
+            self.CTL_cells, phenotype
         )
         birth = self.temp_scalar * birth
         death = self.temp_scalar * death
