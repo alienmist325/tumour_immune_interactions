@@ -100,7 +100,8 @@ def graph_from_path(path=path_to_data):
 def flatten_dict(dict: dict):
     return [key for key, val in dict.items() for _ in range(val)]
 
-def hist_base(tumour_cells : CellBundle, CTL_cells : CellBundle, phen_struct):
+
+def hist_base(tumour_cells: CellBundle, CTL_cells: CellBundle, phen_struct):
     import matplotlib.pyplot as plt
 
     tumour_cell_phenotypes = flatten_dict(tumour_cells.cells_at_phenotype)
@@ -121,8 +122,12 @@ def hist_base(tumour_cells : CellBundle, CTL_cells : CellBundle, phen_struct):
     plt.legend()
     return plt
 
-def hist_from_state(state : SimulationState):
-    return hist_base(state.tumour_cells, state.CTL_cells, state.tumour_cells.phen_struct)
+
+def hist_from_state(state: SimulationState):
+    return hist_base(
+        state.tumour_cells, state.CTL_cells, state.tumour_cells.phen_struct
+    )
+
 
 def hist(sim: Simulation):
     import matplotlib.pyplot as plt

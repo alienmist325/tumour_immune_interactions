@@ -4,9 +4,8 @@ from copy import deepcopy
 import conf
 import importlib
 import pickle
-from typing import Self
 from abc import ABC, abstractmethod
-from functools import singledispatch
+import Levenshtein
 
 
 class PhenotypeStructure(ABC):
@@ -34,14 +33,6 @@ class PhenotypeStructure(ABC):
     # (Not anymore) IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
     # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
 
-    @classmethod
-    @abstractmethod
-    def get_interaction_scaling(self, phen_1, phen_2):
-        if type(phen_1.struct) is type(phen_2.struct):
-            type(phen_1.struct).get_interaction_scaling(phen_1, phen_2)
-        else:
-            return -1
-
 
 class Phenotype:
     def __init__(self, struct: PhenotypeStructure, id):
@@ -60,6 +51,9 @@ class Phenotype:
 
     def __hash__(self):
         return hash((self.struct, self.id))
+
+    def __str__(self):
+        return f"{self.id} inside {str(self.struct)}"
 
 
 class SequencePhenotypeStructure(PhenotypeStructure):
@@ -90,13 +84,14 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         pass
 
     @classmethod
-    def get_sequence_difference(phen_1, phen_2, sequence_matrix):
-        pass
+    def get_sequence_distance(phen_1: Phenotype, phen_2: Phenotype, sequence_matrix):
+        # TODO: implement a sequence matrix
+        return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
     @classmethod
     def get_interaction_function(self):
         return (
-            Self.get_sequence_distance
+            self.get_sequence_distance
         )  # or is it better to do self.etc rather than the class method? Which works?
 
     @classmethod
@@ -108,7 +103,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_cross_interaction_function(self):
-        return Self.get_affinity_distance
+        return self.get_affinity_distance
 
     @classmethod
     def get_standard_cross_interaction_data(self):
@@ -190,7 +185,7 @@ class LatticePhenotypeStructure(PhenotypeStructure):
     @classmethod
     def get_interaction_function(self):
         return (
-            Self.compute_interaction_scaling
+            self.compute_interaction_scaling
         )  # or is it better to do self.etc rather than the class method? Which works?
 
     @classmethod
@@ -238,7 +233,7 @@ class PhenotypeInteractions:
     interaction_data : dict from (struct1, struct2) to data
     """
 
-    def __init__(self, interaction_data: dict, interaction_functions: dict):
+    def __init__(self, interaction_data: dict = {}, interaction_functions: dict = {}):
         self.interaction_data = interaction_data
         self.interaction_functions = interaction_functions
         self.phenotype_separation_scaling = {}
@@ -248,6 +243,10 @@ class PhenotypeInteractions:
         data = self.interaction_data[struct_tuple]
         function = self.interaction_functions[struct_tuple]
         function(phen_1, phen_2, range, data)
+
+    def setup_interactions(self, struct_tuple, data, function):
+        self.interaction_data[struct_tuple] = data
+        self.interaction_functions[struct_tuple] = function
 
     def get_interaction_scaling(
         self,
@@ -263,6 +262,61 @@ class PhenotypeInteractions:
                 (phenotype_1, phenotype_2)
             ] = self.compute_interaction_scaling(phenotype_1, phenotype_2, range)
         return self.phenotype_separation_scaling[(phenotype_1, phenotype_2)]
+
+    @classmethod
+    def get_default_sequence_interactions(
+        self,
+        tumour_struct: SequencePhenotypeStructure,
+        CTL_struct: SequencePhenotypeStructure,
+        sequence_matrix,
+        affinity_matrix,
+    ):
+        """
+        Create a PhenotypeInteractions object which handles interactions between two sequence-based phenotype structures.
+        """
+        ts = tumour_struct
+        cs = CTL_struct
+        phen_int = PhenotypeInteractions()
+
+        phen_int.setup_interactions(
+            (ts, ts),
+            sequence_matrix,
+            SequencePhenotypeStructure.get_interaction_function(),
+        )
+
+        phen_int.setup_interactions(
+            (cs, cs),
+            sequence_matrix,
+            SequencePhenotypeStructure.get_interaction_function(),
+        )
+
+        phen_int.setup_interactions(
+            (ts, cs),
+            affinity_matrix,
+            SequencePhenotypeStructure.get_cross_interaction_function(),
+        )
+
+        phen_int.setup_interactions(
+            (cs, ts),
+            np.transpose(affinity_matrix),
+            SequencePhenotypeStructure.get_cross_interaction_function(),
+        )
+
+        return phen_int()
+
+    @classmethod
+    def get_default_lattice_interactions(
+        self, lattice_struct: LatticePhenotypeStructure
+    ):
+        """
+        Create a PhenotypeInteractions object which handles interactions where all cells have the same lattice phenotype structure.
+        """
+        ls = lattice_struct
+        phen_int = PhenotypeInteractions()
+
+        phen_int.setup_interactions(
+            (ls, ls), ls.get_standard_interaction_data(), ls.get_interaction_function()
+        )
 
 
 class UniversalCellParams:
@@ -299,6 +353,7 @@ class CellBundle:
         if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, phenotype):
             return
         """
+        print(phenotype)
 
         if phenotype not in self.cells_at_phenotype:
             self.cells_at_phenotype[phenotype] = number
@@ -306,8 +361,17 @@ class CellBundle:
             self.cells_at_phenotype[phenotype] += number
 
     def kill_cells(self, phenotype: Phenotype, number):
+        print("killing" + str(phenotype))
+        from debug import print_dict_with_function
+
+        print_dict_with_function(
+            self.cells_at_phenotype, lambda phenotype: str(phenotype)
+        )
         if phenotype not in self.cells_at_phenotype:
-            raise ValueError("No cells of this phenotype exist. Cannot kill cells.")
+            raise ValueError(
+                "No cells of this phenotype exist. Cannot kill cells."
+                + str(phenotype.id)
+            )
         else:
             if self.cells_at_phenotype[phenotype] < number:
                 raise ValueError(
@@ -337,7 +401,7 @@ class CellBundle:
     @classmethod
     def evolve_population(
         self,
-        cells: Self,
+        cells,
         get_phenotype_probabilities,
     ):
         new_cells = deepcopy(cells)
@@ -364,16 +428,14 @@ class CellBundle:
 
 class SimulationStateTypes:
     @classmethod
-    def populations_only(
-        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
-    ):
+    def populations_only(self, state, CTL_cells: CellBundle, tumour_cells: CellBundle):
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
         return state
 
     @classmethod
     def whole_cell_bundles(
-        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
+        self, state, CTL_cells: CellBundle, tumour_cells: CellBundle
     ):
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
@@ -441,9 +503,21 @@ class Simulation:
         self.time_step = 0  # An integer describing which time step we're on
         self.final_time_step = int(final_time / time_step_size)
 
-        self.phen_struct = PhenotypeStructure(
+        self.phen_struct = LatticePhenotypeStructure(
             absolute_max_phenotype, no_possible_phenotypes
         )
+        self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
+            self.phen_struct
+        )
+
+        """
+        self.tumour_struct = SequencePhenotypeStructure([])
+        self.CTL_struct = SequencePhenotypeStructure([])
+        self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
+            self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
+        )
+        """
+
         self.tumour_cells = CellBundle.random(
             no_init_tumour_cells, tumour_universal_params, self.phen_struct
         )
@@ -468,37 +542,6 @@ class Simulation:
         # Something like this (implement properly)
         sequence_matrix = np.identity(10)
         affinity_matrix = np.identity(10)
-
-        self.tumour_struct = SequencePhenotypeStructure([])
-        self.CTL_struct = SequencePhenotypeStructure([])
-
-        ts = self.tumour_struct
-        cs = self.CTL_struct
-        interaction_data = {}
-
-        interaction_data[(ts, ts)] = sequence_matrix
-        interaction_data[(cs, cs)] = sequence_matrix
-        interaction_data[(ts, cs)] = affinity_matrix
-        interaction_data[(cs, ts)] = np.transpose(affinity_matrix)
-
-        interaction_function = {}
-        interaction_function[
-            (ts, ts)
-        ] = SequencePhenotypeStructure.get_interaction_function()
-        interaction_function[
-            (cs, cs)
-        ] = SequencePhenotypeStructure.get_interaction_function()
-        interaction_function[
-            (ts, cs)
-        ] = SequencePhenotypeStructure.get_cross_interaction_function()
-        interaction_function[
-            (cs, ts)
-        ] = SequencePhenotypeStructure.get_cross_interaction_function()
-
-        self.phen_int = PhenotypeInteractions(
-            interaction_functions=interaction_function,
-            interaction_data=interaction_data,
-        )
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
@@ -643,7 +686,7 @@ class Simulation:
         self.final_time_step = int(self.final_time / self.time_step_size)
 
     @classmethod
-    def load_simulation(self, path_to_data) -> Self:
+    def load_simulation(self, path_to_data):
         with open(path_to_data, "rb") as f:
             sim = pickle.load(f)
             print("Successfully opened the previous simulation.")

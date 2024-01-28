@@ -4,7 +4,13 @@ from copy import deepcopy
 import conf
 import importlib
 import pickle
-from typing import Self
+from typing import TypeVar
+
+
+# A set of workarounds for not having Self, from Python 3.11 (change back to self if you upgrade)
+TPhenotypeStructure = TypeVar("TPhenotypeStructure", bound="PhenotypeStructure")
+TCellBundle = TypeVar("TCellBundle", bound="CellBundle")
+TSimulation = TypeVar("TSimulation", bound="Simulation")
 
 
 class PhenotypeStructure:
@@ -49,7 +55,7 @@ class PhenotypeStructure:
 
     @classmethod
     def is_excluded_phenotype(
-        self, phen_struct: Self, phenotype_id: int, exclude_percent=0.1
+        self, phen_struct: TPhenotypeStructure, phenotype_id: int, exclude_percent=0.1
     ):
         no_values = phen_struct.no_possible_values
         return (
@@ -149,7 +155,7 @@ class CellBundle:
     @classmethod
     def evolve_population(
         self,
-        cells: Self,
+        cells: TCellBundle,
         get_phenotype_probabilities,
     ):
         new_cells = deepcopy(cells)
@@ -177,7 +183,7 @@ class CellBundle:
 class SimulationStateTypes:
     @classmethod
     def populations_only(
-        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
+        self, state: TCellBundle, CTL_cells: CellBundle, tumour_cells: CellBundle
     ):
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
@@ -185,7 +191,7 @@ class SimulationStateTypes:
 
     @classmethod
     def whole_cell_bundles(
-        self, state: Self, CTL_cells: CellBundle, tumour_cells: CellBundle
+        self, state, CTL_cells: CellBundle, tumour_cells: CellBundle
     ):
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
@@ -472,7 +478,7 @@ class Simulation:
         self.final_time_step = int(self.final_time / self.time_step_size)
 
     @classmethod
-    def load_simulation(self, path_to_data) -> Self:
+    def load_simulation(self, path_to_data) -> TSimulation:
         with open(path_to_data, "rb") as f:
             sim = pickle.load(f)
             print("Successfully opened the previous simulation.")
