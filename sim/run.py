@@ -1,6 +1,6 @@
 from simulation import Simulation, UniversalCellParams
 from conf import path_to_data
-from inputs import get_sim_configuration
+from inputs import get_sim_configuration, read_phenotypes
 
 
 def create_simulation(config_name=None):

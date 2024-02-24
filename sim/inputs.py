@@ -31,6 +31,13 @@ def get_config_namespace_from_df_row(df: pd.DataFrame, config_name):
     config["name"] = config.name
     return SimpleNamespace(**config)
 
+def read_phenotypes(filename):
+    phenotypes = []
+    filepath = get_file_dir() + "/" + filename
+    with open(filepath, "r") as file:
+        print(file.read())
+        phenotypes.append(file.readline())
+    return phenotypes
 
 def set_up_and_get_arguments():
     warnings.simplefilter("ignore")
