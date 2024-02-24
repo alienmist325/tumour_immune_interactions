@@ -7,6 +7,8 @@ import pickle
 from abc import ABC, abstractmethod
 import Levenshtein
 
+# Rename this to discrete_model eventually
+
 
 class PhenotypeStructure(ABC):
     @abstractmethod
@@ -58,19 +60,22 @@ class Phenotype:
 
 class SequencePhenotypeStructure(PhenotypeStructure):
     def __init__(self, sequences):
-        self.seqeuences = sequences
+        self.sequences = sequences
 
     def get_random_phenotype(self):
         """
         Generate a valid phenotype id.
         """
-        pass
+        return random.choice(self.sequences)
 
     def get_random_mutation(self, phenotype):
         """
         Get a possible mutation of the phenotype.
         """
-        pass
+        return random.choice(self.sequences, self.get_mutation_weightings())
+    
+    def get_mutation_weightings(self, phenotype):
+        return np.ones(len(self.sequences))
 
     def get_value(self, phenotype):
         """
@@ -79,12 +84,12 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         return phenotype.id  # By default, these are the same
 
     @classmethod
-    def get_affinity_distance(phen_1, phen_2, binding_affinity_matrix):
+    def get_affinity_distance(self, phen_1, phen_2, binding_affinity_matrix):
         # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
         pass
 
     @classmethod
-    def get_sequence_distance(phen_1: Phenotype, phen_2: Phenotype, sequence_matrix):
+    def get_sequence_distance(self, phen_1: Phenotype, phen_2: Phenotype, sequence_matrix):
         # TODO: implement a sequence matrix
         return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
@@ -503,19 +508,10 @@ class Simulation:
         self.time_step = 0  # An integer describing which time step we're on
         self.final_time_step = int(final_time / time_step_size)
 
-        self.phen_struct = LatticePhenotypeStructure(
-            absolute_max_phenotype, no_possible_phenotypes
-        )
-        self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
-            self.phen_struct
-        )
+        Simulation.setup_default_lattice_phenotypes()
 
         """
-        self.tumour_struct = SequencePhenotypeStructure([])
-        self.CTL_struct = SequencePhenotypeStructure([])
-        self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
-            self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
-        )
+        
         """
 
         self.tumour_cells = CellBundle.random(
@@ -542,6 +538,39 @@ class Simulation:
         # Something like this (implement properly)
         sequence_matrix = np.identity(10)
         affinity_matrix = np.identity(10)
+
+    @classmethod
+    def setup_default_lattice_phenotypes(self, absolute_max_phenotype, no_possible_phenotypes):
+        """
+        If you are using a lattice phenotype, setup and get the PhenotypeStructure and PhenotypeInteractions
+        """
+        self.phen_struct = LatticePhenotypeStructure(
+            absolute_max_phenotype, no_possible_phenotypes
+        )
+        self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
+            self.phen_struct
+        )
+
+    @classmethod
+    def setup_default_sequence_phenotypes(self, possible_tumours : list[str], possible_CTLs : list[str], sequence_matrix, affinity_matrix):
+        """
+        
+        Parameters
+        ----
+        sequence matrix :
+            A matrix indicating the compatability/ interactability of two protein sequence letters
+
+        affinity_matrix:
+            A matrix indicating the affinities between all the CTLs and tumours present
+
+        
+        """
+        self.tumour_struct = SequencePhenotypeStructure(possible_tumours)
+        self.CTL_struct = SequencePhenotypeStructure(possible_CTLs)
+        self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
+            self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
+        )
+
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
