@@ -15,7 +15,7 @@ print(a[p])
 print(a[p2])
 """
 
-from simulation import Phenotype, LatticePhenotypeStructure, SequencePhenotypeStructure
+from sim.discrete_model import Phenotype, LatticePhenotypeStructure, SequencePhenotypeStructure
 
 
 """
@@ -34,5 +34,5 @@ print(phen_2 in a)
 
 
 
-peptides = read_phenotypes("peptides_from_TULIP.txt")
-print(peptides)
+##peptides = read_phenotypes("peptides_from_TULIP.txt")
+#print(peptides)

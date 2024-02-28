@@ -1,10 +1,14 @@
-from simulation import Simulation, UniversalCellParams
-from conf import path_to_data
+"""
+Running my discrete model simulation (and setting it up).
+"""
+
+from sim.discrete_model import Simulation, UniversalCellParams
+from sim.config.conf import path_to_data
 from inputs import get_sim_configuration, read_phenotypes
 
 
 def create_simulation(config_name=None):
-    cf = get_sim_configuration(config_name)
+    cf = get_sim_configuration("discrete", config_name)
     print(config_name)
 
     cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
@@ -61,6 +65,9 @@ def run(overwrite=None, config_name=None):
 
 
 def extend(additional_time):
+    """
+    Extend the end time of the simulation.
+    """
     try:
         sim = Simulation.load_simulation(path_to_data)
         sim.extend(additional_time)

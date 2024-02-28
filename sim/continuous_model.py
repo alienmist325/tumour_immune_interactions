@@ -1,12 +1,11 @@
+"""
+A modification of Marta's simulation, to work seamlessly with my own simulation framework.
+"""
+
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 import os
-
-
-"""
-A modification of Marta's simulation.
-"""
 
 
 def create_u_vector(L, num_subintervals_lattice):

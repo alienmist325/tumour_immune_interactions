@@ -1,7 +1,11 @@
+"""
+An implementation of the model Almeida described, complete with its parameters and interaction logic. This was the model that I based my modifications of off.
+"""
+
 import random
 import numpy as np
 from copy import deepcopy
-import conf
+import sim.config.conf as conf
 import importlib
 import pickle
 from typing import TypeVar
@@ -211,7 +215,7 @@ class SimulationState:
         CTL_cells: CellBundle,
         tumour_cells: CellBundle,
     ):
-        from conf import sim_state_init_type
+        from sim.config.conf import sim_state_init_type
 
         initialiser = SimulationState.type_to_init_dict[sim_state_init_type]
         self = initialiser(self, CTL_cells, tumour_cells)
@@ -223,7 +227,7 @@ class SimulationHistory:
 
     def __init__(self, history: list[SimulationState] = []):
         # Do I need to copy the simulation?
-        from conf import sim_state_init_type
+        from sim.config.conf import sim_state_init_type
 
         self.history = history
         self.state_init_type = sim_state_init_type  # We hope this is the same as each sim state, but technically, it could not be

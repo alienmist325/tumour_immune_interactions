@@ -1,8 +1,15 @@
+"""
+A run file that sets up Marta's continuous model simulation from the specified config and executes the simulation.
+"""
+
+# TODO: Add graph functionality
+
+
 from continuous_model import matrix_exponential_dist, interaction_matrix_model
 import numpy as np
 from inputs import get_sim_configuration
 
-cf = get_sim_configuration()
+cf = get_sim_configuration("continuous")
 mat_size = int(cf.no_possible_phenotypes + 1)
 const_affinity_matrix = cf.binding_affinity * np.ones((mat_size, mat_size))
 

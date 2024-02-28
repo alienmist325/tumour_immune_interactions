@@ -1,4 +1,8 @@
-from simulation import PhenotypeStructure, UniversalCellParams
+"""
+A depreciated implementation of cells that involved storing lists of many cell objects, rather than simply storing a count. 
+"""
+
+from ..discrete_model import PhenotypeStructure, UniversalCellParams
 import random
 
 

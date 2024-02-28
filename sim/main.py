@@ -1,3 +1,7 @@
+"""
+The entry point and interface for the program.
+"""
+
 from run import run
 from inputs import set_up_and_get_arguments
 from cProfile import Profile
