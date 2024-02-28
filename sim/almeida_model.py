@@ -5,7 +5,7 @@ An implementation of the model Almeida described, complete with its parameters a
 import random
 import numpy as np
 from copy import deepcopy
-import sim.config.conf as conf
+import config.conf as conf
 import importlib
 import pickle
 from typing import TypeVar

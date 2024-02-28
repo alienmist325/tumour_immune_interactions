@@ -41,9 +41,21 @@ self.phen_int.set_up_interactions(
 ```
 (Rinse and repeat)
 
+Where should this all be placed in the code? Strictly, you can just replace the if statement, for the default subtype, `lattice`. If you want to do this properly, however, see Section 4.
+
 ## 3. Creating a new `PhenotypeStructure` class
 You must inherit the `ABC`. 
 It may be useful to create class methods detailing "generic data" or an "interaction function" that this structure will use when interacting with itself. 
 
 Must be hashable, and comparable (with `__eq__`). This can simply be done by hashing or comparing the arguments resepectively.
+
+## 4. Creating a new `subtype`
+For my simulation, the `simtype` is always `discrete`.
+
+To create a `subtype`, you just have to specify in `arguments.csv` what parameters are required, optional and ignored (`0`, `1`, `2`).
+
+To implement this subtype into the simulation, find the if statement that checks the subtype. Here you want to:
+1) Load the relevant keyword arguments (e.g. `kwargs["my_parameter"]`)
+2) Run the phenotype setup outlined in Section 2
+
 

@@ -7,7 +7,10 @@ import warnings
 import pandas as pd
 from types import SimpleNamespace
 import os
-
+import json
+import numpy as np
+from discrete_model import Simulation
+import importlib
 from dataclasses import dataclass
 
 
@@ -106,7 +109,6 @@ def get_sim_configuration(simtype, config_name=None):
     config = verify_and_extract_config(full_config, config_type)
     return get_config_namespace_from_df(config)
 
-
 def get_config_namespace_from_df(config : pd.DataFrame):
     return SimpleNamespace(**config)
 
@@ -135,6 +137,37 @@ def read_phenotypes(filename):
         print(file.read())
         phenotypes.append(file.readline())
     return phenotypes
+
+def get_matrix_function_from_config(matrix_config_path):
+
+    with open(get_file_dir() + matrix_config_path) as file:
+        config = json.load(file)
+
+    if config["from"] == "path":
+        if "delimiter" not in config.keys() or config["delimiter"] == "":
+            config["delimiter"] = " "
+
+        matrix = np.loadtxt(config["path"], delimiter=config["delimiter"])
+
+        def get_matrix(sim : Simulation):
+            return matrix
+        
+        # return get_matrix
+
+    if config["from"] == "function":
+        if "where" not in config.keys() or config["where"] == "":
+            try:
+                get_matrix = globals()[config["function"]]
+            except KeyError:
+                raise KeyError("The specified function does not exist in the global scope here.")
+        else:
+            try:
+                module = importlib.import_module(config["where"]) # Supports relative imports
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError("The specified module containing the matrix function does not exist.")
+            get_matrix = getattr(module, config["function"])
+        
+        return get_matrix
 
 def set_up_and_get_arguments():
     warnings.simplefilter("ignore")

@@ -2,9 +2,9 @@
 Running my discrete model simulation (and setting it up).
 """
 
-from sim.discrete_model import Simulation, UniversalCellParams
-from sim.config.conf import path_to_data
-from inputs import get_sim_configuration, read_phenotypes
+from discrete_model import Simulation, UniversalCellParams
+from config.conf import path_to_data
+from inputs import get_sim_configuration, read_phenotypes, get_matrix_function_from_config
 
 
 def create_simulation(config_name=None):
@@ -27,20 +27,45 @@ def create_simulation(config_name=None):
         cf.CTL_selectivity,
     )
 
-    sim = Simulation(
-        cf.time_step,
-        cf.final_time,
-        int(cf.no_possible_phenotypes),
-        1,
-        no_init_tumour_cells=int(cf.no_init_tumour_cells),
-        no_init_CTL_cells=int(cf.no_init_CTL_cells),
-        tumour_universal_params=tumour_universal_params,
-        CTL_universal_params=CTL_universal_params,
-        TCR_affinity_range=cf.affinity_range,
-        TCR_binding_affinity=cf.binding_affinity,
-        tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
-        config_name=cf.name,
-    )
+    if cf.subtype == "lattice":
+        sim = Simulation(
+            cf.time_step,
+            cf.final_time,
+            no_init_tumour_cells=int(cf.no_init_tumour_cells),
+            no_init_CTL_cells=int(cf.no_init_CTL_cells),
+            tumour_universal_params=tumour_universal_params,
+            CTL_universal_params=CTL_universal_params,
+            TCR_affinity_range=cf.affinity_range,
+            tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
+            config_name=cf.name,
+            no_possible_phenotypes=int(cf.no_possible_phenotypes),
+            absolute_max_phenotype=1,
+            TCR_binding_affinity=cf.binding_affinity
+        )
+    elif cf.subtype == "sequence":
+        CTL_sequences = read_phenotypes(cf.CTL_sequence_path)
+        tumour_sequences = read_phenotypes(cf.tumour_sequence_path)
+        get_sequence_matrix = get_matrix_function_from_config(cf.sequence_matrix_config)
+        get_affinity_matrix = get_matrix_function_from_config(cf.affinity_matrix_config)
+
+        sim = Simulation(
+            cf.time_step,
+            cf.final_time,
+            no_init_tumour_cells=int(cf.no_init_tumour_cells),
+            no_init_CTL_cells=int(cf.no_init_CTL_cells),
+            tumour_universal_params=tumour_universal_params,
+            CTL_universal_params=CTL_universal_params,
+            TCR_affinity_range=cf.affinity_range,
+            tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
+            config_name=cf.name,
+            CTL_sequences=CTL_sequences,
+            tumour_sequences=tumour_sequences,
+            get_sequence_matrix=get_sequence_matrix,
+            get_affinity_matrix=get_affinity_matrix
+        )
+
+    else:
+        raise NotImplementedError(f"Subtype {cf.subtype} has not been implemented into run.py. Add this functionality, or check your spelling.")
     return sim
 
 

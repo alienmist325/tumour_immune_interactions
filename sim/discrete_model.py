@@ -5,7 +5,7 @@ My new proposed discrete model, with a flexible phenotype space.
 
 import numpy as np
 from copy import deepcopy
-import sim.config.conf as conf
+import config.conf as conf
 import importlib
 import pickle
 from phenotype import Phenotype, PhenotypeInteractions, PhenotypeStructure, SequencePhenotypeStructure, LatticePhenotypeStructure
@@ -13,6 +13,7 @@ from phenotype import Phenotype, PhenotypeInteractions, PhenotypeStructure, Sequ
 # Rename this to discrete_model eventually
 
 
+sequence_chars = tuple("ACDEFGHIKLMNPQRSTVWY")
 
 
 class UniversalCellParams:
@@ -138,7 +139,7 @@ class SimulationState:
     }
 
     def __init__(self, CTL_cells: CellBundle, tumour_cells: CellBundle):
-        from sim.config.conf import sim_state_init_type
+        from config.conf import sim_state_init_type
 
         initialiser = SimulationState.type_to_init_dict[sim_state_init_type]
         self = initialiser(self, CTL_cells, tumour_cells)
@@ -150,7 +151,7 @@ class SimulationHistory:
 
     def __init__(self, history: list[SimulationState] = []):
         # Do I need to copy the simulation?
-        from sim.config.conf import sim_state_init_type
+        from config.conf import sim_state_init_type
 
         self.history = history
         self.state_init_type = sim_state_init_type  # We hope this is the same as each sim state, but technically, it could not be
@@ -169,16 +170,15 @@ class Simulation:
         self,
         time_step_size,
         final_time,
-        no_possible_phenotypes,
-        absolute_max_phenotype,
         no_init_tumour_cells,
         no_init_CTL_cells,
         tumour_universal_params,
         CTL_universal_params,
         TCR_affinity_range,
-        TCR_binding_affinity,
         tumour_phenotypic_variation_probability,
+        subtype,
         config_name="Unspecified",
+        **kwargs
     ):
         self.config_name = config_name
         self.final_time = final_time
@@ -190,11 +190,23 @@ class Simulation:
         self.time_step = 0  # An integer describing which time step we're on
         self.final_time_step = int(final_time / time_step_size)
 
-        self.setup_default_lattice_phenotypes(absolute_max_phenotype, no_possible_phenotypes)
+        if subtype == "lattice":
+            self.TCR_binding_affinity = kwargs["TCR_binding_affinity"]
 
-        """
+            self.setup_default_lattice_phenotypes(kwargs["absolute_max_phenotype"], kwargs["no_possible_phenotypes"])
+        elif subtype == "sequence":
+            self.sequence_chars = sequence_chars
+
+            self.CTL_sequences = kwargs["CTL_sequences"]
+            self.tumour_sequences = kwargs["tumour_sequences"]
+            self.sequence_matrix = kwargs["get_sequence_matrix"](self)
+            self.affinity_matrix = kwargs["get_affinity_matrix"](self)
+
+            self.setup_default_sequence_phenotypes(self.tumour_sequences, self.CTL_sequences, self.sequence_matrix, self.affinity_matrix)
+        else:
+            raise NotImplementedError(f"The specified subtype {subtype} is not one recognised by the simulation.")
+
         
-        """
 
         self.tumour_cells = CellBundle.random(
             no_init_tumour_cells, tumour_universal_params, self.phen_struct
@@ -204,7 +216,7 @@ class Simulation:
         )
 
         self.TCR_affinity_range = TCR_affinity_range
-        self.TCR_binding_affinity = TCR_binding_affinity
+
         self.tumour_phenotypic_variation_probability = (
             tumour_phenotypic_variation_probability
         )
@@ -217,13 +229,9 @@ class Simulation:
         self.history = SimulationHistory()
         self.temp_scalar = 1
 
-        # Something like this (implement properly)
-        sequence_matrix = np.identity(10)
-        affinity_matrix = np.identity(10)
-
     def setup_default_lattice_phenotypes(self, absolute_max_phenotype, no_possible_phenotypes):
         """
-        If you are using a lattice phenotype, setup and get the PhenotypeStructure and PhenotypeInteractions
+        If you are using a lattice phenotype, set up and get the PhenotypeStructure and PhenotypeInteractions
         """
         self.phen_struct = LatticePhenotypeStructure(
             absolute_max_phenotype, no_possible_phenotypes
@@ -408,3 +416,12 @@ class Simulation:
             print("Pickling....")
             pickle.dump(sim, f, pickle.HIGHEST_PROTOCOL)
             print("Pickling done.")
+
+
+
+def get_ones_matrix(sim : Simulation):
+    l = len(sim.sequence_chars)
+    return np.ones((l,l))
+
+def get_random_matrix(sim: Simulation):
+    pass

@@ -15,7 +15,7 @@ print(a[p])
 print(a[p2])
 """
 
-from sim.discrete_model import Phenotype, LatticePhenotypeStructure, SequencePhenotypeStructure
+from discrete_model import Phenotype, LatticePhenotypeStructure, SequencePhenotypeStructure
 
 
 """

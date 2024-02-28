@@ -80,6 +80,7 @@ CTL_selectivity
 
 ### Sequence
 
+
 Required:
 
 name
@@ -108,3 +109,19 @@ CTL_selectivity
 > subtype
 > sequence_matrix_config
 > affinity_matrix_config
+
+
+## Matrix configuration
+This will be done as a json file. 
+
+### Path
+- "from" : "path"
+- "path" : from the source directory (simulation)
+- "delimiter" : If empty "" or unspecified, then we assume a space " " delimiting
+
+Internally, this will load the matrix, have it stored as the output of a function, and pass this function into the simulation.
+
+# Function
+- "from" : "function"
+- "where" : if empty "", then we assume globally in the source file (`Simulation`); otherwise we import that relative reference
+- "function" : the name of the function (cannot be inside a class). This function takes in the `Simulation` object after all initialisations have been done (so you may need to inspect the init file), and returns a matrix 
