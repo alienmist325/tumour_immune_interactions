@@ -5,7 +5,11 @@ The configuration loaded is dependent on:
 - `simtype` (this will come from the file you run: `continuous_run.py` or `run.py` i.e. whether you run Marta's model, or the discrete model)
 `discrete`
 `continuous`
+
+defaults to `discrete`
 - `subtype` (specified in the config file, and defaulting to `lattice`)
+`lattice`
+`sequence`
 
 `name` must be unique.
 

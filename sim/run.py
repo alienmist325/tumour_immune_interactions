@@ -8,8 +8,9 @@ from inputs import get_sim_configuration, read_phenotypes, get_matrix_function_f
 
 
 def create_simulation(config_name=None):
+    print(config_name) # This is what you pass in by the command line (ahead of time)
     cf = get_sim_configuration("discrete", config_name)
-    print(config_name)
+    print("Blom", cf.subtype)
 
     cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
 
@@ -40,7 +41,8 @@ def create_simulation(config_name=None):
             config_name=cf.name,
             no_possible_phenotypes=int(cf.no_possible_phenotypes),
             absolute_max_phenotype=1,
-            TCR_binding_affinity=cf.binding_affinity
+            TCR_binding_affinity=cf.binding_affinity,
+            subtype=cf.subtype
         )
     elif cf.subtype == "sequence":
         CTL_sequences = read_phenotypes(cf.CTL_sequence_path)
@@ -61,7 +63,8 @@ def create_simulation(config_name=None):
             CTL_sequences=CTL_sequences,
             tumour_sequences=tumour_sequences,
             get_sequence_matrix=get_sequence_matrix,
-            get_affinity_matrix=get_affinity_matrix
+            get_affinity_matrix=get_affinity_matrix,
+            subtype=cf.subtype
         )
 
     else:

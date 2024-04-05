@@ -9,7 +9,6 @@ from types import SimpleNamespace
 import os
 import json
 import numpy as np
-from discrete_model import Simulation
 import importlib
 from dataclasses import dataclass
 
@@ -28,6 +27,13 @@ def get_file_dir():
 
 def get_config_type(simtype : str, config : pd.DataFrame) -> ConfigType:
     subtype = config["subtype"]
+
+    if subtype == "":
+        # Default
+        subtype = "lattice"
+
+    print(subtype)
+
     config_type = ConfigType(simtype, subtype)
     return config_type
 
@@ -106,6 +112,7 @@ def get_sim_configuration(simtype, config_name=None):
 
     full_config = get_config_df_from_row(df, config_name)
     config_type = get_config_type(simtype, full_config)
+    full_config["subtype"] = config_type.subtype # In case we have to overwrite "" with our default substitute
     config = verify_and_extract_config(full_config, config_type)
     return get_config_namespace_from_df(config)
 
@@ -149,7 +156,7 @@ def get_matrix_function_from_config(matrix_config_path):
 
         matrix = np.loadtxt(config["path"], delimiter=config["delimiter"])
 
-        def get_matrix(sim : Simulation):
+        def get_matrix(sim):
             return matrix
         
         # return get_matrix
