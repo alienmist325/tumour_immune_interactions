@@ -13,19 +13,17 @@ import importlib
 from dataclasses import dataclass
 
 
-
 @dataclass
 class ConfigType:
-    simtype : str
-    subtype : str
+    simtype: str
+    subtype: str
 
-
-    
 
 def get_file_dir():
     return os.path.join(os.path.dirname(__file__))
 
-def get_config_type(simtype : str, config : pd.DataFrame) -> ConfigType:
+
+def get_config_type(simtype: str, config: pd.DataFrame) -> ConfigType:
     subtype = config["subtype"]
 
     if subtype == "":
@@ -37,7 +35,8 @@ def get_config_type(simtype : str, config : pd.DataFrame) -> ConfigType:
     config_type = ConfigType(simtype, subtype)
     return config_type
 
-def verify_and_extract_config(config, config_type : ConfigType):
+
+def verify_and_extract_config(config, config_type: ConfigType):
     """
     Extract all the `required` and `optional` arguments and put _only_ these into the namespace. \n
     Raise errors if `required` arguments are not found. \n
@@ -50,17 +49,20 @@ def verify_and_extract_config(config, config_type : ConfigType):
     for arg in required:
         if config[arg] == "":
             raise ValueError("Required argument {arg} is not specified.")
-        
+
     for arg in ignored:
         if config[arg] != "":
-            print(f"Ignored argument {arg} has been specified, but will not be used in the simulation.")
+            print(
+                f"Ignored argument {arg} has been specified, but will not be used in the simulation."
+            )
         del config[arg]
 
     print(config)
 
     return config
 
-def get_argument_priorities_from_config_type(config_type : ConfigType):
+
+def get_argument_priorities_from_config_type(config_type: ConfigType):
     """
     Get the priority of each argument, based on the configuration type. We have the following priorities:
 
@@ -70,37 +72,51 @@ def get_argument_priorities_from_config_type(config_type : ConfigType):
 
     """
     if config_type.subtype == "":
-        config_type.subtype = "lattice" # By default, we assume this is the desired subtype
+        config_type.subtype = (
+            "lattice"  # By default, we assume this is the desired subtype
+        )
 
     required = []
     optional = []
     ignored = []
 
-    args_df = pd.read_csv(get_file_dir() + '/config/arguments.csv', dtype="object")
-    args = args_df[args_df["simtype"] == config_type.simtype][args_df["subtype"] == config_type.subtype] # We assume uniqueness in this file
-    
-    if args.empty:
-        raise ValueError(f"There is no configuration with simtype {config_type.simtype} and subtype {config_type.subtype}")
+    args_df = pd.read_csv(get_file_dir() + "/config/arguments.csv", dtype="object")
+    args = args_df[args_df["simtype"] == config_type.simtype][
+        args_df["subtype"] == config_type.subtype
+    ]  # We assume uniqueness in this file
 
-    args_series = next(args.iterrows())[1] # Extract the first row, pulling the second element out of the (index, row) object
+    if args.empty:
+        raise ValueError(
+            f"There is no configuration with simtype {config_type.simtype} and subtype {config_type.subtype}"
+        )
+
+    args_series = next(args.iterrows())[
+        1
+    ]  # Extract the first row, pulling the second element out of the (index, row) object
     del args_series["simtype"]
-    del args_series["subtype"] 
-    
+    del args_series["subtype"]
+
     for key, value in args_series.items():
-        if (value == "0"):
+        if value == "0":
             required.append(key)
-        elif (value == "1"):
+        elif value == "1":
             optional.append(key)
-        elif (value == "2"):
+        elif value == "2":
             ignored.append(key)
         else:
-            raise ValueError(f"Argument priorities not configured correctly for simtype {config_type.simtype} and subtype {config_type.subtype}. {key} had unexpected value {value}, rather than 0, 1, or 2.")
-        
+            raise ValueError(
+                f"Argument priorities not configured correctly for simtype {config_type.simtype} and subtype {config_type.subtype}. {key} had unexpected value {value}, rather than 0, 1, or 2."
+            )
+
     return required, optional, ignored
+
 
 def get_sim_configuration(simtype, config_name=None):
     df = pd.read_csv(
-        get_file_dir() + "/config/configurations.csv", usecols=lambda x: x != "description", dtype="string", keep_default_na=False
+        get_file_dir() + "/config/configurations.csv",
+        usecols=lambda x: x != "description",
+        dtype="string",
+        keep_default_na=False,
     )
     df = df.set_index("name")
     print(df.index.tolist())
@@ -112,12 +128,16 @@ def get_sim_configuration(simtype, config_name=None):
 
     full_config = get_config_df_from_row(df, config_name)
     config_type = get_config_type(simtype, full_config)
-    full_config["subtype"] = config_type.subtype # In case we have to overwrite "" with our default substitute
+    full_config["subtype"] = (
+        config_type.subtype
+    )  # In case we have to overwrite "" with our default substitute
     config = verify_and_extract_config(full_config, config_type)
     return get_config_namespace_from_df(config)
 
-def get_config_namespace_from_df(config : pd.DataFrame):
+
+def get_config_namespace_from_df(config: pd.DataFrame):
     return SimpleNamespace(**config)
+
 
 def try_to_numeric(value):
     if value == "":
@@ -128,6 +148,7 @@ def try_to_numeric(value):
         except ValueError:
             return value
 
+
 def get_config_df_from_row(df: pd.DataFrame, config_name):
     """
     Extract the row from `configurations.csv` associated with your specified config.
@@ -137,6 +158,7 @@ def get_config_df_from_row(df: pd.DataFrame, config_name):
     config["name"] = config.name
     return config
 
+
 def read_phenotypes(filename):
     phenotypes = []
     filepath = get_file_dir() + "/" + filename
@@ -145,10 +167,14 @@ def read_phenotypes(filename):
         phenotypes.append(file.readline())
     return phenotypes
 
+
 def get_matrix_function_from_config(matrix_config_path):
 
-    with open(get_file_dir() + matrix_config_path) as file:
+    with open(get_file_dir() + "/" + matrix_config_path) as file:
         config = json.load(file)
+
+    if "from" not in config.keys():
+        raise KeyError("Invalid configuration file: missing 'from' attribute")
 
     if config["from"] == "path":
         if "delimiter" not in config.keys() or config["delimiter"] == "":
@@ -158,23 +184,32 @@ def get_matrix_function_from_config(matrix_config_path):
 
         def get_matrix(sim):
             return matrix
-        
-        # return get_matrix
 
-    if config["from"] == "function":
+        # return get_matrix
+    elif config["from"] == "function":
         if "where" not in config.keys() or config["where"] == "":
             try:
                 get_matrix = globals()[config["function"]]
             except KeyError:
-                raise KeyError("The specified function does not exist in the global scope here.")
+                raise KeyError(
+                    "The specified function does not exist in the global scope here."
+                )
         else:
             try:
-                module = importlib.import_module(config["where"]) # Supports relative imports
+                module = importlib.import_module(
+                    config["where"]
+                )  # Supports relative imports
             except ModuleNotFoundError:
-                raise ModuleNotFoundError("The specified module containing the matrix function does not exist.")
+                raise ModuleNotFoundError(
+                    "The specified module containing the matrix function does not exist."
+                )
             get_matrix = getattr(module, config["function"])
-        
-        return get_matrix
+
+    else:
+        raise NotImplementedError("Invalid 'from' value.")
+
+    return get_matrix
+
 
 def set_up_and_get_arguments():
     warnings.simplefilter("ignore")

@@ -8,5 +8,6 @@ path_to_output = get_file_dir() + "/../outputs/"
 m_adjustment = True  # Make my simulation seem more like Marta's (But this can likely be removed, since it's just for small temporary changes)
 sim_state_init_type = "detailed"
 
+
 def hello_world(sim):
     print("hello")

@@ -4,11 +4,15 @@ Running my discrete model simulation (and setting it up).
 
 from discrete_model import Simulation, UniversalCellParams
 from config.conf import path_to_data
-from inputs import get_sim_configuration, read_phenotypes, get_matrix_function_from_config
+from inputs import (
+    get_sim_configuration,
+    read_phenotypes,
+    get_matrix_function_from_config,
+)
 
 
 def create_simulation(config_name=None):
-    print(config_name) # This is what you pass in by the command line (ahead of time)
+    print(config_name)  # This is what you pass in by the command line (ahead of time)
     cf = get_sim_configuration("discrete", config_name)
     print("Blom", cf.subtype)
 
@@ -42,7 +46,7 @@ def create_simulation(config_name=None):
             no_possible_phenotypes=int(cf.no_possible_phenotypes),
             absolute_max_phenotype=1,
             TCR_binding_affinity=cf.binding_affinity,
-            subtype=cf.subtype
+            subtype=cf.subtype,
         )
     elif cf.subtype == "sequence":
         CTL_sequences = read_phenotypes(cf.CTL_sequence_path)
@@ -64,11 +68,13 @@ def create_simulation(config_name=None):
             tumour_sequences=tumour_sequences,
             get_sequence_matrix=get_sequence_matrix,
             get_affinity_matrix=get_affinity_matrix,
-            subtype=cf.subtype
+            subtype=cf.subtype,
         )
 
     else:
-        raise NotImplementedError(f"Subtype {cf.subtype} has not been implemented into run.py. Add this functionality, or check your spelling.")
+        raise NotImplementedError(
+            f"Subtype {cf.subtype} has not been implemented into run.py. Add this functionality, or check your spelling."
+        )
     return sim
 
 

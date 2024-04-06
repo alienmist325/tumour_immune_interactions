@@ -2,13 +2,18 @@
 My new proposed discrete model, with a flexible phenotype space.
 """
 
-
 import numpy as np
 from copy import deepcopy
 import config.conf as conf
 import importlib
 import pickle
-from phenotype import Phenotype, PhenotypeInteractions, PhenotypeStructure, SequencePhenotypeStructure, LatticePhenotypeStructure
+from phenotype import (
+    Phenotype,
+    PhenotypeInteractions,
+    PhenotypeStructure,
+    SequencePhenotypeStructure,
+    LatticePhenotypeStructure,
+)
 
 # Rename this to discrete_model eventually
 
@@ -57,7 +62,7 @@ class CellBundle:
             self.cells_at_phenotype[phenotype] += number
 
     def kill_cells(self, phenotype: Phenotype, number):
-        
+
         if phenotype not in self.cells_at_phenotype:
             raise ValueError(
                 "No cells of this phenotype exist. Cannot kill cells. "
@@ -178,7 +183,7 @@ class Simulation:
         tumour_phenotypic_variation_probability,
         subtype,
         config_name="Unspecified",
-        **kwargs
+        **kwargs,
     ):
         self.config_name = config_name
         self.final_time = final_time
@@ -193,7 +198,10 @@ class Simulation:
         if subtype == "lattice":
             self.TCR_binding_affinity = kwargs["TCR_binding_affinity"]
 
-            self.setup_default_lattice_phenotypes(kwargs["absolute_max_phenotype"], kwargs["no_possible_phenotypes"])
+            print("lattice")
+            self.setup_default_lattice_phenotypes(
+                kwargs["absolute_max_phenotype"], kwargs["no_possible_phenotypes"]
+            )
         elif subtype == "sequence":
             self.sequence_chars = sequence_chars
 
@@ -202,17 +210,23 @@ class Simulation:
             self.sequence_matrix = kwargs["get_sequence_matrix"](self)
             self.affinity_matrix = kwargs["get_affinity_matrix"](self)
 
-            self.setup_default_sequence_phenotypes(self.tumour_sequences, self.CTL_sequences, self.sequence_matrix, self.affinity_matrix)
+            print("sequence")
+            self.setup_default_sequence_phenotypes(
+                self.tumour_sequences,
+                self.CTL_sequences,
+                self.sequence_matrix,
+                self.affinity_matrix,
+            )
         else:
-            raise NotImplementedError(f"The specified subtype {subtype} is not one recognised by the simulation.")
-
-        
+            raise NotImplementedError(
+                f"The specified subtype {subtype} is not one recognised by the simulation."
+            )
 
         self.tumour_cells = CellBundle.random(
-            no_init_tumour_cells, tumour_universal_params, self.phen_struct
+            no_init_tumour_cells, tumour_universal_params, self.tumour_struct
         )
         self.CTL_cells = CellBundle.random(
-            no_init_CTL_cells, CTL_universal_params, self.phen_struct
+            no_init_CTL_cells, CTL_universal_params, self.CTL_struct
         )
 
         self.TCR_affinity_range = TCR_affinity_range
@@ -229,20 +243,29 @@ class Simulation:
         self.history = SimulationHistory()
         self.temp_scalar = 1
 
-    def setup_default_lattice_phenotypes(self, absolute_max_phenotype, no_possible_phenotypes):
+    def setup_default_lattice_phenotypes(
+        self, absolute_max_phenotype, no_possible_phenotypes
+    ):
         """
         If you are using a lattice phenotype, set up and get the PhenotypeStructure and PhenotypeInteractions
         """
-        self.phen_struct = LatticePhenotypeStructure(
+        self.tumour_struct = LatticePhenotypeStructure(
             absolute_max_phenotype, no_possible_phenotypes
         )
+        self.CTL_struct = self.tumour_struct
         self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
-            self.phen_struct
+            self.CTL_struct
         )
 
-    def setup_default_sequence_phenotypes(self, possible_tumours : list[str], possible_CTLs : list[str], sequence_matrix, affinity_matrix):
+    def setup_default_sequence_phenotypes(
+        self,
+        possible_tumours: list[str],
+        possible_CTLs: list[str],
+        sequence_matrix,
+        affinity_matrix,
+    ):
         """
-        
+
         Parameters
         ----
         sequence matrix :
@@ -251,14 +274,13 @@ class Simulation:
         affinity_matrix:
             A matrix indicating the affinities between all the CTLs and tumours present
 
-        
+
         """
         self.tumour_struct = SequencePhenotypeStructure(possible_tumours)
         self.CTL_struct = SequencePhenotypeStructure(possible_CTLs)
         self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
             self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
         )
-
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
@@ -287,20 +309,16 @@ class Simulation:
         phenotype: Phenotype,
     ):
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
-        return (
-            cells.universal_params.interaction_induced_base_rate
-            * self.TCR_binding_affinity
-            * sum(
-                [
-                    self.phen_int.get_interaction_scaling(
-                        phenotype,
-                        other_phenotype,
-                        self.TCR_affinity_range,
-                    )
-                    * other_cells_at_phenotype
-                    for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
-                ]
-            )
+        return cells.universal_params.interaction_induced_base_rate * sum(
+            [
+                self.phen_int.get_interaction_scaling(
+                    phenotype,
+                    other_phenotype,
+                    self.TCR_affinity_range,
+                )
+                * other_cells_at_phenotype
+                for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
+            ]
         )
 
     def mutate(self, cells: CellBundle):
@@ -355,17 +373,17 @@ class Simulation:
 
     def get_phenotype_tumour_probabilities(self, phenotype):
         if phenotype not in self.phenotype_tumour_probabilities:
-            self.phenotype_tumour_probabilities[
-                phenotype
-            ] = self.compute_phenotype_tumour_probabilities(phenotype)
+            self.phenotype_tumour_probabilities[phenotype] = (
+                self.compute_phenotype_tumour_probabilities(phenotype)
+            )
 
         return self.phenotype_tumour_probabilities[phenotype]
 
     def get_phenotype_CTL_probabilities(self, phenotype):
         if phenotype not in self.phenotype_CTL_probabilities:
-            self.phenotype_CTL_probabilities[
-                phenotype
-            ] = self.compute_phenotype_CTL_probabilities(phenotype)
+            self.phenotype_CTL_probabilities[phenotype] = (
+                self.compute_phenotype_CTL_probabilities(phenotype)
+            )
 
         return self.phenotype_CTL_probabilities[phenotype]
 
@@ -418,10 +436,34 @@ class Simulation:
             print("Pickling done.")
 
 
+def get_ones_matrix(w: int, h: int):
+    return np.ones((w, h))
 
-def get_ones_matrix(sim : Simulation):
+
+def get_ones_matrix_sequences(sim: Simulation):
     l = len(sim.sequence_chars)
-    return np.ones((l,l))
+    return get_ones_matrix(l, l)
 
-def get_random_matrix(sim: Simulation):
-    pass
+
+def get_ones_matrix_affinity(sim: Simulation):
+    w = len(sim.CTL_sequences)
+    h = len(sim.tumour_sequences)
+    return get_ones_matrix(w, h)
+
+
+def get_random_matrix(w: int, h: int):
+    """
+    Generate a random matrix with entries in [0,1)
+    """
+    np.random.rand((w, h))
+
+
+def get_random_matrix_sequences(sim: Simulation):
+    l = len(sim.sequence_chars)
+    return get_random_matrix(l, l)
+
+
+def get_random_matrix_affinity(sim: Simulation):
+    w = len(sim.CTL_sequences)
+    h = len(sim.tumour_sequences)
+    return get_random_matrix(w, h)

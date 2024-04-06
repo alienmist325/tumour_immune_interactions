@@ -8,6 +8,7 @@ import random
 from abc import ABC, abstractmethod
 import Levenshtein
 
+
 class PhenotypeStructure(ABC):
     @abstractmethod
     def get_random_phenotype(self):
@@ -41,6 +42,7 @@ class PhenotypeStructure(ABC):
     # (Not anymore) IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
     # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
 
+
 class Phenotype:
     def __init__(self, struct: PhenotypeStructure, id):
         # Notice we will have a problem if our value isn't one that compares nicely (e.g. float), so we have to use a "comparable" id here instead
@@ -62,39 +64,56 @@ class Phenotype:
     def __str__(self):
         return f"{self.id} inside {str(self.struct)}"
 
+
 class SequencePhenotypeStructure(PhenotypeStructure):
     def __init__(self, sequences):
-        self.sequences = sequences
+        self.sequences = tuple(sequences)
+        self.ids = range(len(self.sequences))
 
     def get_random_phenotype(self):
         """
-        Generate a valid phenotype id.
+        Generate a valid phenotype id. ==Or an actual phenotype?==
         """
-        return random.choice(self.sequences)
+        return Phenotype(self, random.choice(self.ids))
 
     def get_random_mutation(self, phenotype):
         """
         Get a possible mutation of the phenotype.
         """
-        return random.choice(self.sequences, self.get_mutation_weightings())
-    
+        return Phenotype(
+            self,
+            random.choices(self.ids, self.get_mutation_weightings(phenotype))[0],
+        )
+
     def get_mutation_weightings(self, phenotype):
+        # TODO: Implement this properly
         return np.ones(len(self.sequences))
 
     def get_value(self, phenotype):
         """
         Get the value associated with a phenotype id.
         """
-        return phenotype.id  # By default, these are the same
+        return self.sequences[phenotype.id]  # By default, these are the same
 
     @classmethod
-    def get_affinity_distance(self, phen_1, phen_2, binding_affinity_matrix):
+    def get_affinity_distance(self, phen_1, phen_2, range, binding_affinity_matrix):
         # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
-        pass
+        affinity = binding_affinity_matrix[phen_1.id, phen_2.id]
+        distance = 1 / binding_affinity_matrix[phen_1.id, phen_2.id]
+        # TODO: Improve this implementation; it's quite crude as it is and not calibrated
+        print(distance)
+        print(range)
+        if distance < range:
+            return 0
+        else:
+            return affinity
 
     @classmethod
-    def get_sequence_distance(self, phen_1: Phenotype, phen_2: Phenotype, sequence_matrix):
+    def get_sequence_distance(
+        self, phen_1: Phenotype, phen_2: Phenotype, range, sequence_matrix
+    ):
         # TODO: implement a sequence matrix
+        print("henlo")
         return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
     @classmethod
@@ -127,9 +146,10 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     def __hash__(self):
         return hash(self.sequences)
-    
+
     def __eq__(self, other):
         return self.sequences == other.sequences
+
 
 class LatticePhenotypeStructure(PhenotypeStructure):
     """
@@ -191,9 +211,7 @@ class LatticePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_interaction_function(self):
-        return (
-            self.compute_interaction_scaling
-        ) 
+        return self.compute_interaction_scaling
 
     @classmethod
     def get_standard_interaction_data(self):
@@ -204,7 +222,11 @@ class LatticePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def compute_interaction_scaling(
-        self, phenotype_1_ : Phenotype, phenotype_2_ : Phenotype, range, distance_type="line"
+        self,
+        phenotype_1_: Phenotype,
+        phenotype_2_: Phenotype,
+        range,
+        distance_type="line",
     ):
         """
         Return 0 if phenotypes are out of the selectivity range; otherwise return a constant, modified to account for the boundary.
@@ -217,22 +239,28 @@ class LatticePhenotypeStructure(PhenotypeStructure):
             distance = LatticePhenotypeStructure.get_circular_distance(
                 phenotype_1, phenotype_2
             )
-        
+
         struct = phenotype_1_.struct
 
         if distance <= range:
-            return 1 / (
-                min(phenotype_1 + range, struct.abs_max_value)
-                - max(phenotype_1 - range, -struct.abs_max_value)
+            return (
+                self.TCR_binding_affinity
+                * 1
+                / (
+                    min(phenotype_1 + range, struct.abs_max_value)
+                    - max(phenotype_1 - range, -struct.abs_max_value)
+                )
             )
         else:
             return 0
 
     def __hash__(self):
         return hash((self.abs_max_value, self.no_possible_values))
-    
+
     def __eq__(self, other):
-        return (self.abs_max_value == other.abs_max_value) and (self.no_possible_values == other.no_possible_values)
+        return (self.abs_max_value == other.abs_max_value) and (
+            self.no_possible_values == other.no_possible_values
+        )
 
     """
     def get_random_phenotype(self):
@@ -240,7 +268,6 @@ class LatticePhenotypeStructure(PhenotypeStructure):
             random.randint(0, self.no_possible_values - 1) * self.step_size
         ) - self.abs_max_value
     """
-
 
 
 class PhenotypeInteractions:
@@ -262,6 +289,11 @@ class PhenotypeInteractions:
         return function(phen_1, phen_2, range, data)
 
     def set_up_interactions(self, struct_tuple, data, function):
+        """
+        Assign an interaction function and its associated data to a particular pair of phenotypes.
+        `function` is of the form `f(phen_1 : Phenotype, phen_2 : Phenotype, range : float, *data)`
+        `data` is the parameter that is passed into the function.
+        """
         self.interaction_data[struct_tuple] = data
         self.interaction_functions[struct_tuple] = function
 
@@ -275,17 +307,17 @@ class PhenotypeInteractions:
             phenotype_1,
             phenotype_2,
         ) not in self.phenotype_separation_scaling:
-            self.phenotype_separation_scaling[
-                (phenotype_1, phenotype_2)
-            ] = self.compute_interaction_scaling(phenotype_1, phenotype_2, range)
+            self.phenotype_separation_scaling[(phenotype_1, phenotype_2)] = (
+                self.compute_interaction_scaling(phenotype_1, phenotype_2, range)
+            )
 
         return self.phenotype_separation_scaling[(phenotype_1, phenotype_2)]
 
     @classmethod
     def get_default_sequence_interactions(
         self,
-        tumour_struct: SequencePhenotypeStructure,
         CTL_struct: SequencePhenotypeStructure,
+        tumour_struct: SequencePhenotypeStructure,
         sequence_matrix,
         affinity_matrix,
     ):
