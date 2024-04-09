@@ -160,11 +160,9 @@ def get_config_df_from_row(df: pd.DataFrame, config_name):
 
 
 def read_phenotypes(filename):
-    phenotypes = []
     filepath = get_file_dir() + "/" + filename
     with open(filepath, "r") as file:
-        print(file.read())
-        phenotypes.append(file.readline())
+        phenotypes = [line.rstrip("\n") for line in file]
     return phenotypes
 
 
@@ -235,3 +233,14 @@ def set_up_and_get_arguments():
     config_name = args["config"]
 
     return save_fig, overwrite, config_name
+
+
+def reset_interrupt():
+    path = get_file_dir() + "/config/conf.py"
+    with open(path, "r") as file:
+        text = file.read()
+
+    text = text.replace("interrupt = True", "interrupt = False")
+
+    with open(path, "w") as file:
+        file.write(text)

@@ -7,6 +7,7 @@ from copy import deepcopy
 import config.conf as conf
 import importlib
 import pickle
+import time
 from phenotype import (
     Phenotype,
     PhenotypeInteractions,
@@ -70,9 +71,13 @@ class CellBundle:
             )
         else:
             if self.cells_at_phenotype[phenotype] < number:
+                """
                 raise ValueError(
                     "Not enough cells of this phenotype exist. Cannot kill cells."
                 )
+                """
+                print("Killed too many cells, but ignored this.")
+                self.cells_at_phenotype[phenotype] = 0
             else:
                 self.cells_at_phenotype[phenotype] -= number
 
@@ -94,8 +99,26 @@ class CellBundle:
             cell_bundle.create_cells(phen_struct.get_random_phenotype(), 1)
         return cell_bundle
 
+    def verify_phenotype_probabilities(weights):
+        birth, death, qui = weights
+        if qui < 0:
+            print("Fixing invalid weights")
+            birth += qui / 2
+            death += qui / 2
+            qui = 0
+
+            if birth < 0:
+                death += birth
+                birth = 0
+
+            if death < 0:
+                birth += death
+                death = 0
+
+        return birth, death, qui
+
     @classmethod
-    def evolve_population(
+    def evolve_population_loop(
         self,
         cells,
         get_phenotype_probabilities,
@@ -117,6 +140,42 @@ class CellBundle:
             # print(len(new_cells))
             # Could just subtract and do this in one step
         return new_cells
+
+    @classmethod
+    def evolve_population_vec(
+        self,
+        cells,
+        get_phenotype_probabilities,
+    ):
+        new_cells = deepcopy(cells)
+        cells_at_phenotype_iterable = list(cells.cells_at_phenotype.items())
+        cells_at_phenotype_array = np.empty(
+            len(cells_at_phenotype_iterable), dtype=object
+        )
+        cells_at_phenotype_array[:] = cells_at_phenotype_iterable
+
+        def evolve(tup):
+            phenotype, number = tup
+
+            if number != 0:
+                weights = get_phenotype_probabilities(phenotype)
+                weights = self.verify_phenotype_probabilities(weights)
+                rng = np.random.default_rng()
+                births, deaths, quiescences = rng.multinomial(number, weights)
+                new_cells.create_cells(phenotype, births)
+                new_cells.kill_cells(phenotype, deaths)
+
+        vec_evolve = np.vectorize(evolve)
+        vec_evolve(cells_at_phenotype_array)
+        return new_cells
+
+    @classmethod
+    def evolve_population(
+        self,
+        cells,
+        get_phenotype_probabilities,
+    ):
+        return CellBundle.evolve_population_vec(cells, get_phenotype_probabilities)
 
 
 class SimulationStateTypes:
@@ -204,7 +263,7 @@ class Simulation:
             )
         elif subtype == "sequence":
             self.sequence_chars = sequence_chars
-
+            print(kwargs["CTL_sequences"])
             self.CTL_sequences = kwargs["CTL_sequences"]
             self.tumour_sequences = kwargs["tumour_sequences"]
             self.sequence_matrix = kwargs["get_sequence_matrix"](self)
@@ -282,13 +341,18 @@ class Simulation:
             self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
         )
 
+        self.tumour_struct.compute_distance_matrix(sequence_matrix)
+        self.CTL_struct.compute_distance_matrix(sequence_matrix)
+
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
 
     def get_average_immune_score(self):
         pass
 
-    def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype: Phenotype):
+    def get_phenotype_natural_death_rate_list(
+        self, cells: CellBundle, phenotype: Phenotype
+    ):
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
@@ -302,7 +366,54 @@ class Simulation:
             ]
         )
 
-    def get_phenotype_interaction_induced_rate(
+    def get_phenotype_natural_death_rate_vec(
+        self, cells: CellBundle, phenotype: Phenotype
+    ):
+        phen_1 = phenotype
+        phen_2 = next(iter(cells.cells_at_phenotype.items()))[0]  # assuming non-zero
+        struct_tuple = (phen_1.struct, phen_2.struct)
+        data = self.phen_int.interaction_data[
+            struct_tuple
+        ]  # This compares different characters, but isn't directly a matrix of the phenotypes against each other. These will need to be computed at the start, I guess? We assume we'll probably need to use all those datapoints anyway.
+
+        distance_matrix = phen_1.struct.get_distance_matrix(data)
+        # print(data)
+        vec1 = distance_matrix[phenotype.id, :]
+        vec2 = np.zeros(len(phen_2.struct.ids))
+
+        for phen, number in cells.cells_at_phenotype.items():
+            vec2[phen.id] = number
+
+        return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
+
+    def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype: Phenotype):
+        return self.get_phenotype_natural_death_rate_vec(cells, phenotype)
+
+    def get_phenotype_interaction_induced_rate_vec(
+        self,
+        cells: CellBundle,
+        other_cells: CellBundle,
+        phenotype: Phenotype,
+    ):
+        # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
+        # Does not factor the range at all.
+
+        phen_1 = phenotype
+        phen_2 = next(iter(other_cells.cells_at_phenotype.items()))[
+            0
+        ]  # assuming non-zero
+        struct_tuple = (phen_1.struct, phen_2.struct)
+        data = self.phen_int.interaction_data[struct_tuple]
+        # print(data)
+        vec1 = data[phenotype.id, :]
+        vec2 = np.zeros(len(phen_2.struct.ids))
+
+        for phen, number in other_cells.cells_at_phenotype.items():
+            vec2[phen.id] = number
+
+        return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
+
+    def get_phenotype_interaction_induced_rate_list(
         self,
         cells: CellBundle,
         other_cells: CellBundle,
@@ -311,7 +422,7 @@ class Simulation:
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
         return cells.universal_params.interaction_induced_base_rate * sum(
             [
-                self.phen_int.get_interaction_scaling(
+                self.phen_int.compute_interaction_scaling(
                     phenotype,
                     other_phenotype,
                     self.TCR_affinity_range,
@@ -319,6 +430,29 @@ class Simulation:
                 * other_cells_at_phenotype
                 for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
             ]
+        )
+
+    def get_phenotype_interaction_induced_rate(
+        self,
+        cells: CellBundle,
+        other_cells: CellBundle,
+        phenotype: Phenotype,
+    ):
+        # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
+        """
+        print(
+            self.get_phenotype_interaction_induced_rate_list(
+                cells, other_cells, phenotype
+            )
+        )
+        print(
+            self.get_phenotype_interaction_induced_rate_vec(
+                cells, other_cells, phenotype
+            )
+        )
+        """
+        return self.get_phenotype_interaction_induced_rate_vec(
+            cells, other_cells, phenotype
         )
 
     def mutate(self, cells: CellBundle):
@@ -333,11 +467,15 @@ class Simulation:
 
     def run(self):
         self.print("The simulation is starting.")
+        start_time = time.time()
         while self.time_step < self.final_time_step:
             importlib.reload(conf)
 
             if conf.interrupt:
                 print("The simulation has been interrupted and will now safely save.")
+                from inputs import reset_interrupt
+
+                reset_interrupt()
                 return
 
             self.time_step += 1
@@ -358,7 +496,7 @@ class Simulation:
             )
 
             self.print("C: ", len(self.tumour_cells), " | T:", len(self.CTL_cells))
-            self.print("Iteration done.")
+            self.print(f"Iteration done after {time.time() - start_time}.")
             self.print("Time step: ", self.time_step, "/", self.final_time_step)
             # Post-calculation
 
@@ -455,7 +593,11 @@ def get_random_matrix(w: int, h: int):
     """
     Generate a random matrix with entries in [0,1)
     """
-    np.random.rand((w, h))
+    print(w)
+    print(h)
+    matrix = np.random.rand(w, h)
+    print(matrix)
+    return matrix
 
 
 def get_random_matrix_sequences(sim: Simulation):
@@ -466,4 +608,5 @@ def get_random_matrix_sequences(sim: Simulation):
 def get_random_matrix_affinity(sim: Simulation):
     w = len(sim.CTL_sequences)
     h = len(sim.tumour_sequences)
+    print(sim.CTL_sequences)
     return get_random_matrix(w, h)

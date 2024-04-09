@@ -2,7 +2,6 @@
 Graphing functionality, including line graphs, histograms and fish plots. Used inside the simulation, and can also be utilised externally.
 """
 
-
 from discrete_model import Simulation, SimulationState, CellBundle
 from config.conf import path_to_data, path_to_output
 import numpy as np
@@ -179,8 +178,14 @@ def savefig(
         else:
             still_save = input("Would you still like to save the file?")
             if still_save == "y":
-                out_path = input("Enter the new path:")
-                continue
+                custom = input("Would you like to enter a fully custom path?")
+                if custom == "y":
+                    out_path = input("Enter the new path:")
+                    continue
+                else:
+                    version = input("Enter which version this figure is:")
+                    out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}_{version}.png"
+                    continue
             else:
                 print("The plot has not been saved.")
                 return

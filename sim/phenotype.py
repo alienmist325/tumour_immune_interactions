@@ -69,6 +69,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     def __init__(self, sequences):
         self.sequences = tuple(sequences)
         self.ids = range(len(self.sequences))
+        self.distance_matrix = None
 
     def get_random_phenotype(self):
         """
@@ -85,9 +86,13 @@ class SequencePhenotypeStructure(PhenotypeStructure):
             random.choices(self.ids, self.get_mutation_weightings(phenotype))[0],
         )
 
-    def get_mutation_weightings(self, phenotype):
+    def get_mutation_weightings(self, phenotype: Phenotype):
         # TODO: Implement this properly
-        return np.ones(len(self.sequences))
+        weightings = np.ones(len(self.sequences))
+        weightings[phenotype.id] = (
+            0  # So that you cannot become the same phenotype you began as
+        )
+        return weightings
 
     def get_value(self, phenotype):
         """
@@ -99,21 +104,21 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     def get_affinity_distance(self, phen_1, phen_2, range, binding_affinity_matrix):
         # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
         affinity = binding_affinity_matrix[phen_1.id, phen_2.id]
-        distance = 1 / binding_affinity_matrix[phen_1.id, phen_2.id]
+        # distance = 1 / binding_affinity_matrix[phen_1.id, phen_2.id]
         # TODO: Improve this implementation; it's quite crude as it is and not calibrated
-        print(distance)
-        print(range)
-        if distance < range:
-            return 0
-        else:
-            return affinity
+        # print(distance)
+        # print(range)
+        return affinity
+        # if distance < range:
+        #    return 0
+        # else:
+        #    return affinity
 
     @classmethod
     def get_sequence_distance(
         self, phen_1: Phenotype, phen_2: Phenotype, range, sequence_matrix
     ):
         # TODO: implement a sequence matrix
-        print("henlo")
         return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
     @classmethod
@@ -149,6 +154,38 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     def __eq__(self, other):
         return self.sequences == other.sequences
+
+    def get_distance_matrix(self, data):
+        if self.distance_matrix is None:
+
+            self.compute_distance_matrix(data)
+
+        return self.distance_matrix
+
+    def compute_distance_matrix(self, data):
+        # Create a list of all possible phenotypes
+        print("computing")
+        all_phenotypes = [Phenotype(self, id) for id in self.ids]
+        num = len(all_phenotypes)
+        all_phenotype_pair_matrix = np.transpose(
+            np.meshgrid(all_phenotypes, all_phenotypes), (2, 1, 0)
+        )
+        all_phenotype_pair_tuple_matrix = np.array(np.ones((num, num)), dtype=object)
+
+        for idx, row in enumerate(all_phenotype_pair_matrix):
+            for idy, pair in enumerate(row):
+                all_phenotype_pair_tuple_matrix[idx][idy] = tuple(pair)
+
+        def get_sequence_distance_by_pair(pair: tuple):
+            return SequencePhenotypeStructure.get_sequence_distance(
+                pair[0], pair[1], 0, data
+            )
+
+        vec_get_sequence_distance = np.vectorize(get_sequence_distance_by_pair)
+
+        distance_matrix = vec_get_sequence_distance(all_phenotype_pair_tuple_matrix)
+
+        self.distance_matrix = distance_matrix
 
 
 class LatticePhenotypeStructure(PhenotypeStructure):
@@ -304,14 +341,14 @@ class PhenotypeInteractions:
         range,
     ):
         if (
-            phenotype_1,
-            phenotype_2,
+            phenotype_1.id,
+            phenotype_2.id,
         ) not in self.phenotype_separation_scaling:
-            self.phenotype_separation_scaling[(phenotype_1, phenotype_2)] = (
+            self.phenotype_separation_scaling[(phenotype_1.id, phenotype_2.id)] = (
                 self.compute_interaction_scaling(phenotype_1, phenotype_2, range)
             )
 
-        return self.phenotype_separation_scaling[(phenotype_1, phenotype_2)]
+        return self.phenotype_separation_scaling[(phenotype_1.id, phenotype_2.id)]
 
     @classmethod
     def get_default_sequence_interactions(

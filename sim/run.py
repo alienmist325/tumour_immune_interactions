@@ -53,6 +53,7 @@ def create_simulation(config_name=None):
         tumour_sequences = read_phenotypes(cf.tumour_sequence_path)
         get_sequence_matrix = get_matrix_function_from_config(cf.sequence_matrix_config)
         get_affinity_matrix = get_matrix_function_from_config(cf.affinity_matrix_config)
+        print(CTL_sequences)
 
         sim = Simulation(
             cf.time_step,
