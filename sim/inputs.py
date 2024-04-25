@@ -153,7 +153,10 @@ def get_config_df_from_row(df: pd.DataFrame, config_name):
     """
     Extract the row from `configurations.csv` associated with your specified config.
     """
-    config = df.loc[config_name]
+    try:
+        config = df.loc[config_name]
+    except KeyError:
+        raise KeyError("Simulation name invalid.")
     config = config.apply(try_to_numeric)
     config["name"] = config.name
     return config

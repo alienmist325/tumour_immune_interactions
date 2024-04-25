@@ -139,6 +139,8 @@ class CellBundle:
             new_cells.kill_cells(phenotype, deaths)
             # print(len(new_cells))
             # Could just subtract and do this in one step
+            new_cells.birth_prob = weights[0]
+            new_cells.death_prob = weights[1]
         return new_cells
 
     @classmethod
@@ -175,7 +177,7 @@ class CellBundle:
         cells,
         get_phenotype_probabilities,
     ):
-        return CellBundle.evolve_population_vec(cells, get_phenotype_probabilities)
+        return CellBundle.evolve_population_loop(cells, get_phenotype_probabilities)
 
 
 class SimulationStateTypes:
@@ -258,6 +260,11 @@ class Simulation:
             self.TCR_binding_affinity = kwargs["TCR_binding_affinity"]
 
             print("lattice")
+            """
+            raise NotImplementedError(
+                "The vectorisation modification has not yet been made for lattices. Please revert the code to use non `_vec` functions before removing this error statement."
+            )
+            """
             self.setup_default_lattice_phenotypes(
                 kwargs["absolute_max_phenotype"], kwargs["no_possible_phenotypes"]
             )
@@ -268,6 +275,7 @@ class Simulation:
             self.tumour_sequences = kwargs["tumour_sequences"]
             self.sequence_matrix = kwargs["get_sequence_matrix"](self)
             self.affinity_matrix = kwargs["get_affinity_matrix"](self)
+            self.binding_scaling = kwargs["binding_scaling"]
 
             print("sequence")
             self.setup_default_sequence_phenotypes(
@@ -275,6 +283,7 @@ class Simulation:
                 self.CTL_sequences,
                 self.sequence_matrix,
                 self.affinity_matrix,
+                self.binding_scaling,
             )
         else:
             raise NotImplementedError(
@@ -309,7 +318,7 @@ class Simulation:
         If you are using a lattice phenotype, set up and get the PhenotypeStructure and PhenotypeInteractions
         """
         self.tumour_struct = LatticePhenotypeStructure(
-            absolute_max_phenotype, no_possible_phenotypes
+            absolute_max_phenotype, no_possible_phenotypes, self.TCR_binding_affinity
         )
         self.CTL_struct = self.tumour_struct
         self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
@@ -322,6 +331,7 @@ class Simulation:
         possible_CTLs: list[str],
         sequence_matrix,
         affinity_matrix,
+        binding_scaling,
     ):
         """
 
@@ -338,11 +348,12 @@ class Simulation:
         self.tumour_struct = SequencePhenotypeStructure(possible_tumours)
         self.CTL_struct = SequencePhenotypeStructure(possible_CTLs)
         self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
-            self.tumour_struct, self.CTL_struct, sequence_matrix, affinity_matrix
+            self.tumour_struct,
+            self.CTL_struct,
+            sequence_matrix,
+            affinity_matrix,
+            binding_scaling,
         )
-
-        self.tumour_struct.compute_distance_matrix(sequence_matrix)
-        self.CTL_struct.compute_distance_matrix(sequence_matrix)
 
     def get_immune_score(self):
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
@@ -387,7 +398,7 @@ class Simulation:
         return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
 
     def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype: Phenotype):
-        return self.get_phenotype_natural_death_rate_vec(cells, phenotype)
+        return self.get_phenotype_natural_death_rate_list(cells, phenotype)
 
     def get_phenotype_interaction_induced_rate_vec(
         self,
@@ -405,7 +416,7 @@ class Simulation:
         struct_tuple = (phen_1.struct, phen_2.struct)
         data = self.phen_int.interaction_data[struct_tuple]
         # print(data)
-        vec1 = data[phenotype.id, :]
+        vec1 = data.interaction_matrix[phenotype.id, :]
         vec2 = np.zeros(len(phen_2.struct.ids))
 
         for phen, number in other_cells.cells_at_phenotype.items():
@@ -451,7 +462,7 @@ class Simulation:
             )
         )
         """
-        return self.get_phenotype_interaction_induced_rate_vec(
+        return self.get_phenotype_interaction_induced_rate_list(
             cells, other_cells, phenotype
         )
 
@@ -467,6 +478,12 @@ class Simulation:
 
     def run(self):
         self.print("The simulation is starting.")
+
+        self.debug_CTL_birth_probs = []
+        self.debug_CTL_death_probs = []
+        self.debug_tumour_birth_probs = []
+        self.debug_tumour_death_probs = []
+
         start_time = time.time()
         while self.time_step < self.final_time_step:
             importlib.reload(conf)
@@ -499,6 +516,11 @@ class Simulation:
             self.print(f"Iteration done after {time.time() - start_time}.")
             self.print("Time step: ", self.time_step, "/", self.final_time_step)
             # Post-calculation
+
+            self.debug_CTL_birth_probs.append(self.CTL_cells.birth_prob)
+            self.debug_CTL_death_probs.append(self.CTL_cells.death_prob)
+            self.debug_tumour_birth_probs.append(self.tumour_cells.birth_prob)
+            self.debug_tumour_death_probs.append(self.tumour_cells.death_prob)
 
             self.history.update(SimulationState(self.CTL_cells, self.tumour_cells))
 

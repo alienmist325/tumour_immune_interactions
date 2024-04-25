@@ -69,6 +69,7 @@ def create_simulation(config_name=None):
             tumour_sequences=tumour_sequences,
             get_sequence_matrix=get_sequence_matrix,
             get_affinity_matrix=get_affinity_matrix,
+            binding_scaling=cf.binding_scaling,
             subtype=cf.subtype,
         )
 

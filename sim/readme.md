@@ -15,7 +15,7 @@ defaults to `discrete`
 `name` must be unique.
 
 
-All arguments ar either:
+All arguments are either:
 - required (0)
 - optional (1)
 - ignored (2)

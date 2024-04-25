@@ -3,6 +3,7 @@ A generic Phenotype class, and the PhenotypeInteractions class that describe how
 All the PhenotypeStructure classes, describing how to build and mutate phenotypes.
 """
 
+from dataclasses import dataclass
 import numpy as np
 import random
 from abc import ABC, abstractmethod
@@ -65,6 +66,12 @@ class Phenotype:
         return f"{self.id} inside {str(self.struct)}"
 
 
+@dataclass
+class SequencePhenotypeInteractionData:
+    interaction_matrix: object
+    scaling: float
+
+
 class SequencePhenotypeStructure(PhenotypeStructure):
     def __init__(self, sequences):
         self.sequences = tuple(sequences)
@@ -101,14 +108,18 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         return self.sequences[phenotype.id]  # By default, these are the same
 
     @classmethod
-    def get_affinity_distance(self, phen_1, phen_2, range, binding_affinity_matrix):
+    def get_affinity_distance(
+        self, phen_1, phen_2, range, data: SequencePhenotypeInteractionData
+    ):
         # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
+        binding_affinity_matrix = data.interaction_matrix
+        binding_scaling = data.scaling
         affinity = binding_affinity_matrix[phen_1.id, phen_2.id]
         # distance = 1 / binding_affinity_matrix[phen_1.id, phen_2.id]
         # TODO: Improve this implementation; it's quite crude as it is and not calibrated
         # print(distance)
         # print(range)
-        return affinity
+        return binding_scaling * affinity
         # if distance < range:
         #    return 0
         # else:
@@ -116,10 +127,18 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_sequence_distance(
-        self, phen_1: Phenotype, phen_2: Phenotype, range, sequence_matrix
+        self,
+        phen_1: Phenotype,
+        phen_2: Phenotype,
+        range,
+        data: SequencePhenotypeInteractionData,
     ):
         # TODO: implement a sequence matrix
-        return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
+        sequence_matrix = data.interaction_matrix
+        sequence_scaling = data.scaling
+        return sequence_scaling * Levenshtein.distance(
+            phen_1.get_value(), phen_2.get_value()
+        )
 
     @classmethod
     def get_interaction_function(self):
@@ -133,6 +152,9 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_standard_interaction_data(self):
+        """
+        An unused function that illustrates usage.
+        """
         # An example of some data
         # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
         sequence_matrix = np.identity(10)  # TODO: fix this
@@ -144,6 +166,9 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_standard_cross_interaction_data(self):
+        """
+        An unused function that illustrates usage.
+        """
         # An example of some data
         # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
         affinity_matrix = np.identity(10)  # TODO: fix this
@@ -155,14 +180,14 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     def __eq__(self, other):
         return self.sequences == other.sequences
 
-    def get_distance_matrix(self, data):
+    def get_distance_matrix(self, data: SequencePhenotypeInteractionData):
         if self.distance_matrix is None:
 
             self.compute_distance_matrix(data)
 
         return self.distance_matrix
 
-    def compute_distance_matrix(self, data):
+    def compute_distance_matrix(self, data: SequencePhenotypeInteractionData):
         # Create a list of all possible phenotypes
         print("computing")
         all_phenotypes = [Phenotype(self, id) for id in self.ids]
@@ -187,6 +212,21 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
         self.distance_matrix = distance_matrix
 
+    @classmethod
+    def sequence_matrix_adjustment(self, sequence_matrix):
+        """
+        Scale down the weights in the sequence matrix so all values are in [0,1]. Assumes all values are positive.
+        """
+        sequence_matrix = np.array(sequence_matrix)
+        max = sequence_matrix.max()
+        return sequence_matrix / max
+
+
+@dataclass
+class LatticeInteractionData:
+    TCR_binding_affinity: float
+    distance_type: str
+
 
 class LatticePhenotypeStructure(PhenotypeStructure):
     """
@@ -194,14 +234,15 @@ class LatticePhenotypeStructure(PhenotypeStructure):
     Phenotype IDs are in the range [0, no_possible_values - 1], and are integers
     """
 
-    def __init__(self, abs_max_value, no_possible_values):
+    def __init__(self, abs_max_value, no_possible_values, TCR_binding_affinity):
         self.abs_max_value = abs_max_value
         self.range = np.linspace(
             -self.abs_max_value, self.abs_max_value, no_possible_values, True
         )
-        self.id_range = range(no_possible_values)
+        self.ids = range(no_possible_values)
         self.step_size = 2 * abs_max_value / no_possible_values  # check this
         self.no_possible_values = no_possible_values  # For an id
+        self.distance_matrix = None
 
     def shift(self, phen: Phenotype, no_steps, direction):
         phen_id = phen.id
@@ -252,6 +293,9 @@ class LatticePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_standard_interaction_data(self):
+        """
+        TODO: Remove as defunct
+        """
         # An example of some data
         # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
         distance_type = "line"
@@ -263,16 +307,16 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         phenotype_1_: Phenotype,
         phenotype_2_: Phenotype,
         range,
-        distance_type="line",
+        data: LatticeInteractionData,
     ):
         """
         Return 0 if phenotypes are out of the selectivity range; otherwise return a constant, modified to account for the boundary.
         """
         phenotype_1 = phenotype_1_.get_value()
         phenotype_2 = phenotype_2_.get_value()
-        if distance_type == "line":
+        if data.distance_type == "line":
             distance = abs(phenotype_1 - phenotype_2)
-        if distance_type == "circular":
+        if data.distance_type == "circular":
             distance = LatticePhenotypeStructure.get_circular_distance(
                 phenotype_1, phenotype_2
             )
@@ -281,7 +325,7 @@ class LatticePhenotypeStructure(PhenotypeStructure):
 
         if distance <= range:
             return (
-                self.TCR_binding_affinity
+                data.TCR_binding_affinity
                 * 1
                 / (
                     min(phenotype_1 + range, struct.abs_max_value)
@@ -298,6 +342,44 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         return (self.abs_max_value == other.abs_max_value) and (
             self.no_possible_values == other.no_possible_values
         )
+
+    def get_distance_matrix(self, data):
+        """
+        TODO: Remove or make more general, since this was copied from `SequencePhenotypeStructure`.
+        This doesn't work fully correctly.
+        """
+        if self.distance_matrix is None:
+
+            self.compute_distance_matrix(data)
+
+        return self.distance_matrix
+
+    def compute_distance_matrix(self, data):
+        """
+        TODO: Remove or make more general, since this was copied from `SequencePhenotypeStructure`
+        This certainly doesn't work fully correctly.
+        """
+        # Create a list of all possible phenotypes
+        print("computing")
+        all_phenotypes = [Phenotype(self, id) for id in self.ids]
+        num = len(all_phenotypes)
+        all_phenotype_pair_matrix = np.transpose(
+            np.meshgrid(all_phenotypes, all_phenotypes), (2, 1, 0)
+        )
+        all_phenotype_pair_tuple_matrix = np.array(np.ones((num, num)), dtype=object)
+
+        for idx, row in enumerate(all_phenotype_pair_matrix):
+            for idy, pair in enumerate(row):
+                all_phenotype_pair_tuple_matrix[idx][idy] = tuple(pair)
+
+        def get_sequence_distance_by_pair(pair: tuple):
+            return self.compute_interaction_scaling(pair[0], pair[1], 0, data)
+
+        vec_get_sequence_distance = np.vectorize(get_sequence_distance_by_pair)
+
+        distance_matrix = vec_get_sequence_distance(all_phenotype_pair_tuple_matrix)
+
+        self.distance_matrix = distance_matrix
 
     """
     def get_random_phenotype(self):
@@ -357,6 +439,7 @@ class PhenotypeInteractions:
         tumour_struct: SequencePhenotypeStructure,
         sequence_matrix,
         affinity_matrix,
+        binding_scaling,
     ):
         """
         Create a PhenotypeInteractions object which handles interactions between two sequence-based phenotype structures.
@@ -365,44 +448,60 @@ class PhenotypeInteractions:
         cs = CTL_struct
         phen_int = PhenotypeInteractions()
 
+        sequence_matrix = SequencePhenotypeStructure.sequence_matrix_adjustment(
+            sequence_matrix
+        )
+        homogeneous_data = SequencePhenotypeInteractionData(sequence_matrix, 0.1)
+
         phen_int.set_up_interactions(
             (ts, ts),
-            sequence_matrix,
+            homogeneous_data,
             SequencePhenotypeStructure.get_interaction_function(),
         )
 
         phen_int.set_up_interactions(
             (cs, cs),
-            sequence_matrix,
+            homogeneous_data,
             SequencePhenotypeStructure.get_interaction_function(),
         )
 
+        cross_data = SequencePhenotypeInteractionData(affinity_matrix, binding_scaling)
+
         phen_int.set_up_interactions(
             (ts, cs),
-            affinity_matrix,
+            cross_data,
             SequencePhenotypeStructure.get_cross_interaction_function(),
+        )
+
+        transposed_cross_data = SequencePhenotypeInteractionData(
+            np.transpose(affinity_matrix), binding_scaling
         )
 
         phen_int.set_up_interactions(
             (cs, ts),
-            np.transpose(affinity_matrix),
+            transposed_cross_data,
             SequencePhenotypeStructure.get_cross_interaction_function(),
         )
+
+        tumour_struct.compute_distance_matrix(homogeneous_data)
+        CTL_struct.compute_distance_matrix(homogeneous_data)
 
         return phen_int
 
     @classmethod
     def get_default_lattice_interactions(
-        self, lattice_struct: LatticePhenotypeStructure
+        self,
+        lattice_struct: LatticePhenotypeStructure,
+        TCR_binding_affinity,
+        distance_type="line",
     ):
         """
         Create a PhenotypeInteractions object which handles interactions where all cells have the same lattice phenotype structure.
         """
         ls = lattice_struct
         phen_int = PhenotypeInteractions()
+        data = LatticeInteractionData(TCR_binding_affinity, distance_type)
 
-        phen_int.set_up_interactions(
-            (ls, ls), ls.get_standard_interaction_data(), ls.get_interaction_function()
-        )
+        phen_int.set_up_interactions((ls, ls), ls.get_standard_interaction_data(), data)
 
         return phen_int
