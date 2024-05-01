@@ -2,7 +2,7 @@
 The entry point and interface for the program.
 """
 
-from run import run
+from run import run, extend
 from inputs import set_up_and_get_arguments
 from cProfile import Profile
 from pstats import SortKey, Stats
@@ -11,6 +11,7 @@ from graphing import graph_from_path, savefig
 
 save_fig, overwrite, config_name = set_up_and_get_arguments()
 
+# extend(100)
 run(overwrite, config_name)
 
 

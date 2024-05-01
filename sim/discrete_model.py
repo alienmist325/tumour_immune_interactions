@@ -657,3 +657,9 @@ def get_random_matrix_affinity(sim: Simulation):
     norm_matrix = 1 - (1 / (1 + exp_matrix))
     print(norm_matrix)
     return norm_matrix
+
+def get_identity_matrix_affinity(sim: Simulation):
+    w = len(sim.CTL_sequences)
+    h = len(sim.tumour_sequences)
+    mat = np.eye(w, h)
+    return mat
