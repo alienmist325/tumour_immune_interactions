@@ -108,7 +108,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         return self.sequences[phenotype.id]  # By default, these are the same
 
     @classmethod
-    def get_affinity_distance(
+    def get_affinity_scaling(
         self, phen_1, phen_2, range, data: SequencePhenotypeInteractionData
     ):
         # For comparing different seqeuence phenotypes (i.e. tumour and T-cell), using binding affinities
@@ -126,6 +126,23 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         #    return affinity
 
     @classmethod
+    def get_sequence_scaling(
+        self,
+        phen_1: Phenotype,
+        phen_2: Phenotype,
+        range,
+        data: SequencePhenotypeInteractionData,
+    ):
+
+        sequence_scaling = data.scaling
+        return sequence_scaling / (
+            1
+            + SequencePhenotypeStructure.get_sequence_distance(
+                phen_1, phen_2, range, data
+            )
+        )
+
+    @classmethod
     def get_sequence_distance(
         self,
         phen_1: Phenotype,
@@ -135,10 +152,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     ):
         # TODO: implement a sequence matrix
         sequence_matrix = data.interaction_matrix
-        sequence_scaling = data.scaling
-        return sequence_scaling * Levenshtein.distance(
-            phen_1.get_value(), phen_2.get_value()
-        )
+        return 0.1 * Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
     @classmethod
     def get_interaction_function(self):
@@ -147,7 +161,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         `f(phen_1 : Phenotype, phen_2 : Phenotype, range : float, *data)`
         """
         return (
-            self.get_sequence_distance
+            self.get_sequence_scaling
         )  # or is it better to do self.etc rather than the class method? Which works?
 
     @classmethod
@@ -162,7 +176,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     @classmethod
     def get_cross_interaction_function(self):
-        return self.get_affinity_distance
+        return self.get_affinity_scaling
 
     @classmethod
     def get_standard_cross_interaction_data(self):
@@ -224,7 +238,6 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
 @dataclass
 class LatticeInteractionData:
-    TCR_binding_affinity: float
     distance_type: str
 
 
@@ -234,7 +247,7 @@ class LatticePhenotypeStructure(PhenotypeStructure):
     Phenotype IDs are in the range [0, no_possible_values - 1], and are integers
     """
 
-    def __init__(self, abs_max_value, no_possible_values, TCR_binding_affinity):
+    def __init__(self, abs_max_value, no_possible_values):
         self.abs_max_value = abs_max_value
         self.range = np.linspace(
             -self.abs_max_value, self.abs_max_value, no_possible_values, True
@@ -324,13 +337,9 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         struct = phenotype_1_.struct
 
         if distance <= range:
-            return (
-                data.TCR_binding_affinity
-                * 1
-                / (
-                    min(phenotype_1 + range, struct.abs_max_value)
-                    - max(phenotype_1 - range, -struct.abs_max_value)
-                )
+            return 1 / (
+                min(phenotype_1 + range, struct.abs_max_value)
+                - max(phenotype_1 - range, -struct.abs_max_value)
             )
         else:
             return 0
@@ -396,9 +405,15 @@ class PhenotypeInteractions:
     interaction_data : dict from (struct1, struct2) to data
     """
 
-    def __init__(self, interaction_data: dict = {}, interaction_functions: dict = {}):
+    def __init__(
+        self,
+        interaction_data: dict = {},
+        interaction_functions: dict = {},
+        cross_term_multipliers: dict = {},
+    ):
         self.interaction_data = interaction_data
         self.interaction_functions = interaction_functions
+        self.cross_term_multiplers = cross_term_multipliers
         self.phenotype_separation_scaling = {}
 
     def compute_interaction_scaling(self, phen_1: Phenotype, phen_2: Phenotype, range):
@@ -407,14 +422,18 @@ class PhenotypeInteractions:
         function = self.interaction_functions[struct_tuple]
         return function(phen_1, phen_2, range, data)
 
-    def set_up_interactions(self, struct_tuple, data, function):
+    def set_up_interactions(
+        self, struct_tuple, data, function, cross_term_multiplier=1
+    ):
         """
         Assign an interaction function and its associated data to a particular pair of phenotypes.
         `function` is of the form `f(phen_1 : Phenotype, phen_2 : Phenotype, range : float, *data)`
         `data` is the parameter that is passed into the function.
+        `cross_term_multiplier` is a scaling that is applied only when phenotypes of different CellBundles interact
         """
         self.interaction_data[struct_tuple] = data
         self.interaction_functions[struct_tuple] = function
+        self.cross_term_multiplers[struct_tuple] = cross_term_multiplier
 
     def get_interaction_scaling(
         self,
@@ -431,6 +450,12 @@ class PhenotypeInteractions:
             )
 
         return self.phenotype_separation_scaling[(phenotype_1.id, phenotype_2.id)]
+
+    def get_cross_term_multipler(
+        self, phen_1_struct: PhenotypeStructure, phen_2_struct: PhenotypeStructure
+    ):
+        struct_tuple = (phen_1_struct, phen_2_struct)
+        return self.cross_term_multiplers[struct_tuple]
 
     @classmethod
     def get_default_sequence_interactions(
@@ -500,8 +525,10 @@ class PhenotypeInteractions:
         """
         ls = lattice_struct
         phen_int = PhenotypeInteractions()
-        data = LatticeInteractionData(TCR_binding_affinity, distance_type)
+        data = LatticeInteractionData(distance_type)
 
-        phen_int.set_up_interactions((ls, ls), ls.get_standard_interaction_data(), data)
+        phen_int.set_up_interactions(
+            (ls, ls), data, ls.get_interaction_function(), TCR_binding_affinity
+        )
 
         return phen_int

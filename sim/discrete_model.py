@@ -309,7 +309,6 @@ class Simulation:
         self.phenotype_separation_scaling = {}
 
         self.history = SimulationHistory()
-        self.temp_scalar = 1
 
     def setup_default_lattice_phenotypes(
         self, absolute_max_phenotype, no_possible_phenotypes
@@ -318,11 +317,11 @@ class Simulation:
         If you are using a lattice phenotype, set up and get the PhenotypeStructure and PhenotypeInteractions
         """
         self.tumour_struct = LatticePhenotypeStructure(
-            absolute_max_phenotype, no_possible_phenotypes, self.TCR_binding_affinity
+            absolute_max_phenotype, no_possible_phenotypes
         )
         self.CTL_struct = self.tumour_struct
         self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
-            self.CTL_struct
+            self.CTL_struct, self.TCR_binding_affinity
         )
 
     def setup_default_sequence_phenotypes(
@@ -431,16 +430,22 @@ class Simulation:
         phenotype: Phenotype,
     ):
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
-        return cells.universal_params.interaction_induced_base_rate * sum(
-            [
-                self.phen_int.compute_interaction_scaling(
-                    phenotype,
-                    other_phenotype,
-                    self.TCR_affinity_range,
-                )
-                * other_cells_at_phenotype
-                for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
-            ]
+        return (
+            cells.universal_params.interaction_induced_base_rate
+            * self.phen_int.get_cross_term_multipler(
+                cells.phen_struct, other_cells.phen_struct
+            )
+            * sum(
+                [
+                    self.phen_int.compute_interaction_scaling(
+                        phenotype,
+                        other_phenotype,
+                        self.TCR_affinity_range,
+                    )
+                    * other_cells_at_phenotype
+                    for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
+                ]
+            )
         )
 
     def get_phenotype_interaction_induced_rate(
@@ -558,8 +563,6 @@ class Simulation:
                 self.tumour_cells, self.CTL_cells, phenotype
             )
         )
-        birth = self.temp_scalar * birth
-        death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
 
     def compute_phenotype_CTL_probabilities(self, phenotype):
@@ -572,8 +575,6 @@ class Simulation:
         death = self.time_step_size * self.get_phenotype_natural_death_rate(
             self.CTL_cells, phenotype
         )
-        birth = self.temp_scalar * birth
-        death = self.temp_scalar * death
         return birth, death, 1 - (birth + death)
 
     def extend(self, additional_time):
@@ -622,13 +623,37 @@ def get_random_matrix(w: int, h: int):
     return matrix
 
 
+def get_random_exp_matrix(w: int, h: int, parameter: float = 1):
+    """
+    Generate an exponential matrix with entries in [0,\infty)
+    """
+    print(w)
+    print(h)
+    matrix = np.random.exponential(1 / parameter, (w, h))
+    print(matrix)
+    return matrix
+
+
+def get_random_exp_matrix_by_input(w, h):
+    parameter = float(input("What parameter for the distribution would you like?"))
+    return get_random_exp_matrix(w, h, parameter)
+
+
 def get_random_matrix_sequences(sim: Simulation):
+    """
+    Generate entries from a uniform distribution (this would be a sensible decision)
+    """
     l = len(sim.sequence_chars)
     return get_random_matrix(l, l)
 
 
 def get_random_matrix_affinity(sim: Simulation):
+    """
+    Generate entries from an exponential distribution (this mimics the idea of not having most phenotypes bind). But we have renormalised and modified to keep within [0,1]
+    """
     w = len(sim.CTL_sequences)
     h = len(sim.tumour_sequences)
-    print(sim.CTL_sequences)
-    return get_random_matrix(w, h)
+    exp_matrix = get_random_exp_matrix_by_input(w, h)
+    norm_matrix = 1 - (1 / (1 + exp_matrix))
+    print(norm_matrix)
+    return norm_matrix

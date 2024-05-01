@@ -48,7 +48,7 @@ def verify_and_extract_config(config, config_type: ConfigType):
 
     for arg in required:
         if config[arg] == "":
-            raise ValueError("Required argument {arg} is not specified.")
+            raise ValueError(f"Required argument {arg} is not specified.")
 
     for arg in ignored:
         if config[arg] != "":

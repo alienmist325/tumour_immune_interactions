@@ -105,11 +105,15 @@ def flatten_dict(dict: dict):
     return [key for key, val in dict.items() for _ in range(val)]
 
 
+def to_ids(phens):
+    return [phen.id for phen in phens]
+
+
 def hist_base(tumour_cells: CellBundle, CTL_cells: CellBundle, phen_struct):
     import matplotlib.pyplot as plt
 
-    tumour_cell_phenotypes = flatten_dict(tumour_cells.cells_at_phenotype)
-    CTL_cell_phenotypes = flatten_dict(CTL_cells.cells_at_phenotype)
+    tumour_cell_phenotypes = to_ids(flatten_dict(tumour_cells.cells_at_phenotype))
+    CTL_cell_phenotypes = to_ids(flatten_dict(CTL_cells.cells_at_phenotype))
 
     plt.hist(
         CTL_cell_phenotypes,
