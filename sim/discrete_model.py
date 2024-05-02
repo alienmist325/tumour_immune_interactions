@@ -663,3 +663,17 @@ def get_identity_matrix_affinity(sim: Simulation):
     h = len(sim.tumour_sequences)
     mat = np.eye(w, h)
     return mat
+
+def get_split_matrix_affinity(sim: Simulation):
+    k = int(input("How many non-interacting phenotypes do you want?"))
+    w = len(sim.CTL_sequences)
+    h = len(sim.tumour_sequences)
+
+    row = np.ones(w)
+    for i in range(k):
+        row[i] = 0
+    # First k are 0. Last w-k are 1.
+
+    matrix = np.full((w,h), row)
+    print(matrix)
+    return matrix
