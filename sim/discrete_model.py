@@ -591,6 +591,9 @@ class Simulation:
 
     @classmethod
     def save_simulation(self, path_to_data, sim):
+        if input("Append config name?") == "y":
+            path_to_data = path_to_data + "_" + sim.config_name
+
         with open(path_to_data, "wb") as f:
             print("Pickling....")
             pickle.dump(sim, f, pickle.HIGHEST_PROTOCOL)
@@ -657,6 +660,7 @@ def get_random_matrix_affinity(sim: Simulation):
     norm_matrix = 1 - (1 / (1 + exp_matrix))
     print(norm_matrix)
     return norm_matrix
+
 
 def get_identity_matrix_affinity(sim: Simulation):
     w = len(sim.CTL_sequences)
