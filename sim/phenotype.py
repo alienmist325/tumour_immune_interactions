@@ -132,12 +132,14 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         phen_2: Phenotype,
         range,
         data: SequencePhenotypeInteractionData,
+        distance_scaling=0.1,
     ):
 
-        sequence_scaling = data.scaling
+        sequence_scaling = data.scaling  # 0.1 by default
         return sequence_scaling / (
             1
-            + SequencePhenotypeStructure.get_sequence_distance(
+            + distance_scaling
+            * SequencePhenotypeStructure.get_sequence_distance(
                 phen_1, phen_2, range, data
             )
         )
@@ -152,7 +154,8 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     ):
         # TODO: implement a sequence matrix
         sequence_matrix = data.interaction_matrix
-        return 0.1 * Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
+        # TODO: should the scaling be here
+        return Levenshtein.distance(phen_1.get_value(), phen_2.get_value())
 
     @classmethod
     def get_interaction_function(self):

@@ -9,6 +9,8 @@ import pandas as pd
 from typing import Callable
 import os
 
+import warnings
+
 
 def get_sim(path=path_to_data) -> Simulation:
     try:
@@ -39,6 +41,17 @@ def graph(sim: Simulation):
     return plt
 
 
+def graph_tumour(sim: Simulation):
+    import matplotlib.pyplot as plt
+
+    tumour_cells_pop, CTL_cells_pop = get_pops(sim)
+    times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
+    # plt.plot(times, CTL_cells_pop, label="CTL Cells")
+    plt.plot(times, tumour_cells_pop, label="Tumour Cells")
+    plt.legend()
+    return plt
+
+
 def fish_tumour(sim: Simulation):
     return fish(sim, "tumour")
 
@@ -47,9 +60,11 @@ def fish_CTL(sim: Simulation):
     return fish(sim, "CTL")
 
 
-def fish(sim: Simulation, bundle_name):
+def fish(sim: Simulation, bundle_name, absolute=False):
     from pyfish import fish_plot, process_data, setup_figure
     import matplotlib.pyplot as plt
+
+    warnings.simplefilter(action="ignore", category=FutureWarning)
 
     if sim.history.state_init_type == "detailed":
         bundles = [get_bundle(state, bundle_name) for state in sim.history]
@@ -58,8 +73,8 @@ def fish(sim: Simulation, bundle_name):
         for step in range(len(bundles)):
             bundle = bundles[step]
             for phenotype, pop in bundle.cells_at_phenotype.items():
-                populations.append([phenotype, step, pop])
-                phenotypes.add(phenotype)
+                populations.append([phenotype.id, step, pop])
+                phenotypes.add(phenotype.id)
         populations_df = pd.DataFrame(
             np.array(populations), columns=["Id", "Step", "Pop"]
         )
@@ -81,8 +96,13 @@ def fish(sim: Simulation, bundle_name):
         parent_tree_df = pd.DataFrame(
             np.array(parent_tree), columns=["ParentId", "ChildId"]
         )
-        data = process_data(populations_df, parent_tree_df)
-        setup_figure()
+        data = process_data(populations_df, parent_tree_df, absolute=absolute)
+        setup_figure(width=1000, height=500)
+        times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
+        data = list(data)
+        data[1] = times
+        data[0].columns = times
+
         fish_plot(*data)
         return plt
 

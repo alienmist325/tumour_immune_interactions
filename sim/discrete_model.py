@@ -15,8 +15,7 @@ from phenotype import (
     SequencePhenotypeStructure,
     LatticePhenotypeStructure,
 )
-
-# Rename this to discrete_model eventually
+import warnings
 
 
 sequence_chars = tuple("ACDEFGHIKLMNPQRSTVWY")
@@ -71,13 +70,10 @@ class CellBundle:
             )
         else:
             if self.cells_at_phenotype[phenotype] < number:
-                """
                 raise ValueError(
                     "Not enough cells of this phenotype exist. Cannot kill cells."
                 )
-                """
-                print("Killed too many cells, but ignored this.")
-                self.cells_at_phenotype[phenotype] = 0
+                # self.cells_at_phenotype[phenotype] = 0
             else:
                 self.cells_at_phenotype[phenotype] -= number
 
@@ -100,6 +96,9 @@ class CellBundle:
         return cell_bundle
 
     def verify_phenotype_probabilities(weights):
+        """
+        TODO: This should no longer, so should be depreciated and removed.
+        """
         birth, death, qui = weights
         if qui < 0:
             print("Fixing invalid weights")
@@ -278,6 +277,9 @@ class Simulation:
             self.binding_scaling = kwargs["binding_scaling"]
 
             print("sequence")
+            warnings.warn(
+                "The sequence matrix functionality has not been improved, so this will be ignored in the population dynamics."
+            )
             self.setup_default_sequence_phenotypes(
                 self.tumour_sequences,
                 self.CTL_sequences,
@@ -668,6 +670,7 @@ def get_identity_matrix_affinity(sim: Simulation):
     mat = np.eye(w, h)
     return mat
 
+
 def get_split_matrix_affinity(sim: Simulation):
     k = int(input("How many non-interacting phenotypes do you want?"))
     w = len(sim.CTL_sequences)
@@ -678,6 +681,6 @@ def get_split_matrix_affinity(sim: Simulation):
         row[i] = 0
     # First k are 0. Last w-k are 1.
 
-    matrix = np.full((w,h), row)
+    matrix = np.full((w, h), row)
     print(matrix)
     return matrix
