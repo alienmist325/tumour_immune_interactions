@@ -2,7 +2,7 @@
 Running my discrete model simulation (and setting it up).
 """
 
-from discrete_model import Simulation, UniversalCellParams
+from discrete_model import Simulation, UniversalCellParams, Selectivities
 from config.conf import path_to_data
 from inputs import (
     get_sim_configuration,
@@ -22,17 +22,20 @@ def create_simulation(config_name=None):
         cf.tumour_natural_prolif_rate,
         cf.tumour_natural_death_rate,
         cf.tumour_interaction_induced_rate,
-        cf.tumour_selectivity,
     )
 
     CTL_universal_params = UniversalCellParams(
         cf.CTL_natural_prolif_rate,
         cf.CTL_natural_death_rate,
         cf.CTL_interaction_induced_rate,
-        cf.CTL_selectivity,
     )
 
     if cf.subtype == "lattice":
+
+        selectivities = Selectivities(
+            cf.affinity_range, cf.CTL_selectivity, cf.tumour_selectivity
+        )
+
         sim = Simulation(
             cf.time_step,
             cf.final_time,
@@ -40,12 +43,12 @@ def create_simulation(config_name=None):
             no_init_CTL_cells=int(cf.no_init_CTL_cells),
             tumour_universal_params=tumour_universal_params,
             CTL_universal_params=CTL_universal_params,
-            TCR_affinity_range=cf.affinity_range,
             tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
             config_name=cf.name,
             no_possible_phenotypes=int(cf.no_possible_phenotypes),
             absolute_max_phenotype=1,
             TCR_binding_affinity=cf.binding_affinity,
+            selectivities=selectivities,
             subtype=cf.subtype,
         )
     elif cf.subtype == "sequence":
@@ -62,7 +65,6 @@ def create_simulation(config_name=None):
             no_init_CTL_cells=int(cf.no_init_CTL_cells),
             tumour_universal_params=tumour_universal_params,
             CTL_universal_params=CTL_universal_params,
-            TCR_affinity_range=cf.affinity_range,
             tumour_phenotypic_variation_probability=cf.tumour_phenotypic_variation_probability,
             config_name=cf.name,
             CTL_sequences=CTL_sequences,
