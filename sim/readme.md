@@ -93,6 +93,8 @@ tumour_sequence_path
 
 ### Sequence
 
+I need to modify these parameters so that the simulation no longer takes in `no_possible_phenotypes` or any of the `selectivities` + `affinity_range` (I need to adjust how I load in those parameters to make them not necessary)
+
 --required--
 
 time_step
