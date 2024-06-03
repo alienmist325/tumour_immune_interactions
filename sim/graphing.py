@@ -41,6 +41,19 @@ def graph(sim: Simulation):
     return plt
 
 
+def report_graph(sim: Simulation):
+    import matplotlib.pyplot as plt
+
+    plt.rcParams["figure.figsize"] = (10, 8)
+    plt.rcParams["font.size"] = 25
+    plt.rcParams["lines.linewidth"] = 4
+    plt.rcParams["xtick.labelbottom"] = True
+    plt = graph(sim)
+    plt.xlabel("Days", labelpad=17)
+    plt.ylabel("Population Size", labelpad=17)
+    return plt
+
+
 def graph_tumour(sim: Simulation):
     import matplotlib.pyplot as plt
 
