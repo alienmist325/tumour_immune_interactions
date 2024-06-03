@@ -2,6 +2,7 @@
 My new proposed discrete model, with a flexible phenotype space.
 """
 
+from dataclasses import dataclass
 import numpy as np
 from copy import deepcopy
 import config.conf as conf
@@ -27,13 +28,18 @@ class UniversalCellParams:
         natural_prolif_rate,
         natural_death_rate,
         interaction_induced_rate,
-        selectivity,
     ):
         # Death rate will be negative for consistency
         self.natural_prolif_base_rate = natural_prolif_rate
         self.natural_death_base_rate = natural_death_rate
         self.interaction_induced_base_rate = interaction_induced_rate
-        self.selectivity = selectivity
+
+
+@dataclass
+class Selectivities:
+    affinity_range: float
+    CTL_selectivity: float
+    tumour_selectivity: float
 
 
 class CellBundle:
@@ -249,7 +255,6 @@ class Simulation:
         no_init_CTL_cells,
         tumour_universal_params,
         CTL_universal_params,
-        TCR_affinity_range,
         tumour_phenotypic_variation_probability,
         subtype,
         config_name="Unspecified",
@@ -267,6 +272,7 @@ class Simulation:
 
         if subtype == "lattice":
             self.TCR_binding_affinity = kwargs["TCR_binding_affinity"]
+            selectivities = kwargs["selectivities"]
 
             print("lattice")
             """
@@ -275,7 +281,9 @@ class Simulation:
             )
             """
             self.setup_default_lattice_phenotypes(
-                kwargs["absolute_max_phenotype"], kwargs["no_possible_phenotypes"]
+                kwargs["absolute_max_phenotype"],
+                kwargs["no_possible_phenotypes"],
+                selectivities,
             )
         elif subtype == "sequence":
             self.sequence_chars = sequence_chars
@@ -309,8 +317,6 @@ class Simulation:
             no_init_CTL_cells, CTL_universal_params, self.CTL_struct
         )
 
-        self.TCR_affinity_range = TCR_affinity_range
-
         self.tumour_phenotypic_variation_probability = (
             tumour_phenotypic_variation_probability
         )
@@ -323,7 +329,10 @@ class Simulation:
         self.history = SimulationHistory()
 
     def setup_default_lattice_phenotypes(
-        self, absolute_max_phenotype, no_possible_phenotypes
+        self,
+        absolute_max_phenotype,
+        no_possible_phenotypes,
+        selectivities: Selectivities,
     ):
         """
         If you are using a lattice phenotype, set up and get the PhenotypeStructure and PhenotypeInteractions
@@ -331,9 +340,14 @@ class Simulation:
         self.tumour_struct = LatticePhenotypeStructure(
             absolute_max_phenotype, no_possible_phenotypes
         )
-        self.CTL_struct = self.tumour_struct
+        self.CTL_struct = deepcopy(
+            self.tumour_struct
+        )  # The LatticePhenotypeStructure is designed such that both structures have the same underlying definition, but we have to create two separate instances so that we can specify different parameters for each
         self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
-            self.CTL_struct, self.TCR_binding_affinity
+            self.tumour_struct,
+            self.CTL_struct,
+            self.TCR_binding_affinity,
+            selectivities,
         )
 
     def setup_default_sequence_phenotypes(
@@ -381,7 +395,6 @@ class Simulation:
                 self.phen_int.get_interaction_scaling(
                     phenotype,
                     other_phenotype,
-                    cells.universal_params.selectivity,
                 )
                 * cells_at_phenotype
                 for other_phenotype, cells_at_phenotype in cells.cells_at_phenotype.items()
@@ -452,7 +465,6 @@ class Simulation:
                     self.phen_int.compute_interaction_scaling(
                         phenotype,
                         other_phenotype,
-                        self.TCR_affinity_range,
                     )
                     * other_cells_at_phenotype
                     for other_phenotype, other_cells_at_phenotype in other_cells.cells_at_phenotype.items()
