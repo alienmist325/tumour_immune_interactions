@@ -97,7 +97,7 @@ class CellBundle:
 
     def verify_phenotype_probabilities(weights):
         """
-        TODO: This should no longer, so should be depreciated and removed.
+        TODO: This should no longer be needed, so should be depreciated and removed.
         """
         birth, death, qui = weights
         if qui < 0:
@@ -131,8 +131,18 @@ class CellBundle:
                 continue
             """
             weights = get_phenotype_probabilities(phenotype)
+
+            """
+            with open("debug.txt", "a") as file:
+                line = str(phenotype.id) + "," + str(phenotype.get_value()) + "," + str(weights[0]) + "," + str(weights[1]) + "," + str(number) + "\n"
+                file.write(line)
+            """
+
             rng = np.random.default_rng()
             births, deaths, quiescences = rng.multinomial(number, weights)
+
+           
+
             # print(births, "|", deaths, "|", quiescences)
             new_cells.create_cells(phenotype, births)
             new_cells.kill_cells(phenotype, deaths)
@@ -565,6 +575,16 @@ class Simulation:
                 self.tumour_cells, self.CTL_cells, phenotype
             )
         )
+
+        """
+        self.print("Begin")
+        self.print(self.get_phenotype_natural_death_rate(self.tumour_cells, phenotype))
+        self.print( self.get_phenotype_interaction_induced_rate(
+                self.tumour_cells, self.CTL_cells, phenotype
+            ))
+        self.print("End")
+        """
+        
         return birth, death, 1 - (birth + death)
 
     def compute_phenotype_CTL_probabilities(self, phenotype):
