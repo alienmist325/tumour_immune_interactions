@@ -154,6 +154,9 @@ def report_fish(sim: Simulation, bundle_name, absolute=False):
 def report_fish_tumour(sim: Simulation):
     return report_fish(sim, "tumour")
 
+def report_fish_tumour_absolute(sim : Simulation):
+    return report_fish(sim, "tumour", True)
+
 
 def report_fish_CTL(sim: Simulation):
     return report_fish(sim, "CTL")
@@ -237,7 +240,8 @@ plt_fn_label = {
     fish_CTL: "fish_CTL",
     report_graph: "graph_report",
     report_fish_CTL: "fish_CTL_report",
-    report_fish_tumour: "fish_tumour_report"
+    report_fish_tumour: "fish_tumour_report",
+    report_fish_tumour_absolute: "fish_tumour_absolute_report"
 }
 
 
