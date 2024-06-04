@@ -30,13 +30,13 @@ def get_pops(sim: Simulation):
     return tumour_cells_pop, CTL_cells_pop
 
 
-def graph(sim: Simulation):
+def graph(sim: Simulation, CTL_label="CTL Cells", tumour_label="Tumour Cells"):
     import matplotlib.pyplot as plt
 
     tumour_cells_pop, CTL_cells_pop = get_pops(sim)
     times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
-    plt.plot(times, CTL_cells_pop, label="CTL Cells")
-    plt.plot(times, tumour_cells_pop, label="Tumour Cells")
+    plt.plot(times, CTL_cells_pop, label=CTL_label)
+    plt.plot(times, tumour_cells_pop, label=tumour_label)
     plt.legend()
     return plt
 
@@ -49,8 +49,8 @@ def report_graph(sim: Simulation):
     plt.rcParams["font.size"] = 25
     plt.rcParams["lines.linewidth"] = 4
     plt.rcParams["xtick.labelbottom"] = True
-    plt = graph(sim)
-    plt.xlabel("Days", labelpad=17)
+    plt = graph(sim, "T-cells", "Tumour cells")
+    plt.xlabel("Time (days)", labelpad=17)
     plt.ylabel("Population Size", labelpad=17)
     return plt
 
@@ -132,7 +132,7 @@ def report_fish(sim: Simulation, bundle_name, absolute=False):
     plot.ylim([0.5, 1])
     plot.yticks([])
     plot.ylabel("")
-    plot.xlabel("Days")
+    plot.xlabel("Time (days)")
 
     state = next(sim.history.__iter__())
     bundle = get_bundle(state, bundle_name)
