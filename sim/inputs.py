@@ -181,7 +181,7 @@ def get_matrix_function_from_config(matrix_config_path):
         if "delimiter" not in config.keys() or config["delimiter"] == "":
             config["delimiter"] = " "
 
-        matrix = np.transpose(np.loadtxt(config["path"], delimiter=config["delimiter"])) # Assuming you have a CTL as each row, and a tumour as each column, you need to transpose.
+        matrix = np.loadtxt(config["path"], delimiter=config["delimiter"]) # Assuming you have a CTL as each row, and a tumour as each column, you need to transpose.
 
         def get_matrix(sim):
             return matrix

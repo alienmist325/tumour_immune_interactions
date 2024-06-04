@@ -44,6 +44,7 @@ def graph(sim: Simulation):
 def report_graph(sim: Simulation):
     import matplotlib.pyplot as plt
 
+    plt.figure()
     plt.rcParams["figure.figsize"] = (10, 8)
     plt.rcParams["font.size"] = 25
     plt.rcParams["lines.linewidth"] = 4
@@ -110,7 +111,9 @@ def fish(sim: Simulation, bundle_name, absolute=False):
             np.array(parent_tree), columns=["ParentId", "ChildId"]
         )
         data = process_data(populations_df, parent_tree_df, absolute=absolute)
-        setup_figure(width=1200, height=1000)
+        sequences = bundles[-1].phen_struct.sequences
+        dist = max([len(seq) for seq in sequences])
+        setup_figure(width=1200, height=1000 * len(sequences) / 12)
         times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
         data = list(data)
         data[1] = times
@@ -122,9 +125,7 @@ def fish(sim: Simulation, bundle_name, absolute=False):
 
 def report_fish(sim: Simulation, bundle_name, absolute=False):
     import matplotlib.pyplot as plt
-
     plt.rcParams["font.size"] = 25
-    plt.rcParams["lines.linewidth"] = 4
     plt.rcParams["xtick.labelbottom"] = True
 
     plot = fish(sim, bundle_name, absolute)
@@ -139,14 +140,23 @@ def report_fish(sim: Simulation, bundle_name, absolute=False):
 
     dist = max([len(seq) for seq in sequences])
 
-    top = 0.965
-    left = -dist
-    dtop = 0.5 / len(sequences)
+    initdtop = (1 - 0.965) * 12 / len(sequences)
+    top = 1- initdtop
+    left = -dist * (sim.time_step * sim.time_step_size / 30) * 1.2
+    dtop = 0.502 / len(sequences)
 
     for seq in sequences:
         plot.text(left, top, seq)
         top -= dtop
 
+    return plt
+
+def report_fish_tumour(sim: Simulation):
+    return report_fish(sim, "tumour")
+
+
+def report_fish_CTL(sim: Simulation):
+    return report_fish(sim, "CTL")
 
 def get_bundle(state: SimulationState, bundle_name) -> CellBundle:
     if bundle_name == "tumour":
@@ -226,6 +236,8 @@ plt_fn_label = {
     fish_tumour: "fish_tumour",
     fish_CTL: "fish_CTL",
     report_graph: "graph_report",
+    report_fish_CTL: "fish_CTL_report",
+    report_fish_tumour: "fish_tumour_report"
 }
 
 
@@ -257,7 +269,19 @@ def savefig(
             else:
                 print("The plot has not been saved.")
                 return
-    plt.savefig(out_path)
+    plt.savefig(out_path, bbox_inches="tight")
+
+def savefig_unsafe(sim: Simulation = None,
+    plt_fn: Callable = report_graph,
+    path_to_output=path_to_output):
+    """
+    Save without any safety the file in the designated location. This will overwrite all previous files.
+    """
+    if sim is None:
+        sim = get_sim()
+    plt = plt_fn(sim)
+    out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
+    plt.savefig(out_path, bbox_inches="tight")
 
 
 def hist_from_path(path=path_to_data):
