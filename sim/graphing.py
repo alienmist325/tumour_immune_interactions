@@ -125,6 +125,7 @@ def fish(sim: Simulation, bundle_name, absolute=False):
 
 def report_fish(sim: Simulation, bundle_name, absolute=False):
     import matplotlib.pyplot as plt
+
     plt.rcParams["font.size"] = 25
     plt.rcParams["xtick.labelbottom"] = True
 
@@ -141,7 +142,7 @@ def report_fish(sim: Simulation, bundle_name, absolute=False):
     dist = max([len(seq) for seq in sequences])
 
     initdtop = (1 - 0.965) * 12 / len(sequences)
-    top = 1- initdtop
+    top = 1 - initdtop
     left = -dist * (sim.time_step * sim.time_step_size / 30) * 1.2
     dtop = 0.502 / len(sequences)
 
@@ -151,15 +152,18 @@ def report_fish(sim: Simulation, bundle_name, absolute=False):
 
     return plt
 
+
 def report_fish_tumour(sim: Simulation):
     return report_fish(sim, "tumour")
 
-def report_fish_tumour_absolute(sim : Simulation):
+
+def report_fish_tumour_absolute(sim: Simulation):
     return report_fish(sim, "tumour", True)
 
 
 def report_fish_CTL(sim: Simulation):
     return report_fish(sim, "CTL")
+
 
 def get_bundle(state: SimulationState, bundle_name) -> CellBundle:
     if bundle_name == "tumour":
@@ -233,6 +237,21 @@ def hist(sim: Simulation):
     return plt
 
 
+def report_hist_general(data, log=False):
+    import matplotlib.pyplot as plt
+
+    plt.rcParams["figure.figsize"] = (10, 8)
+    plt.rcParams["font.size"] = 25
+    plt.rcParams["lines.linewidth"] = 4
+    plt.rcParams["xtick.labelbottom"] = True
+
+    plt.hist(data, log=log)
+    plt.xlabel("", labelpad=20)
+    plt.ylabel("", labelpad=20)
+
+    return plt
+
+
 plt_fn_label = {
     graph: "graph",
     hist: "hist",
@@ -241,7 +260,7 @@ plt_fn_label = {
     report_graph: "graph_report",
     report_fish_CTL: "fish_CTL_report",
     report_fish_tumour: "fish_tumour_report",
-    report_fish_tumour_absolute: "fish_tumour_absolute_report"
+    report_fish_tumour_absolute: "fish_tumour_absolute_report",
 }
 
 
@@ -275,9 +294,12 @@ def savefig(
                 return
     plt.savefig(out_path, bbox_inches="tight")
 
-def savefig_unsafe(sim: Simulation = None,
+
+def savefig_unsafe(
+    sim: Simulation = None,
     plt_fn: Callable = report_graph,
-    path_to_output=path_to_output):
+    path_to_output=path_to_output,
+):
     """
     Save without any safety the file in the designated location. This will overwrite all previous files.
     """

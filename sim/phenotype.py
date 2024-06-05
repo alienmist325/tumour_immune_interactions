@@ -77,6 +77,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         self.sequences = tuple(sequences)
         self.ids = range(len(self.sequences))
         self.distance_matrix = None
+        self.avg_distance = np.average(self.get_distances())
 
     def get_random_phenotype(self):
         """
@@ -131,14 +132,29 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         phen_1: Phenotype,
         phen_2: Phenotype,
         data: SequencePhenotypeInteractionData,
-        distance_scaling=0.1,
+        distance_scaling=1,
     ):
 
         sequence_scaling = data.scaling  # 0.1 by default
         return sequence_scaling / (
             1
             + distance_scaling
-            * SequencePhenotypeStructure.get_sequence_distance(phen_1, phen_2, data)
+            * SequencePhenotypeStructure.get_normalised_sequence_distance(
+                phen_1, phen_2, data
+            )
+        )
+
+    @classmethod
+    def get_normalised_sequence_distance(
+        self,
+        phen_1: Phenotype,
+        phen_2: Phenotype,
+        data: SequencePhenotypeInteractionData,
+    ):
+        avg_distance = phen_1.struct.avg_distance
+        return (
+            SequencePhenotypeStructure.get_sequence_distance(phen_1, phen_2, data)
+            / avg_distance
         )
 
     @classmethod
@@ -224,6 +240,19 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         distance_matrix = vec_get_sequence_distance(all_phenotype_pair_tuple_matrix)
 
         self.distance_matrix = distance_matrix
+
+    def get_distances(self):
+        dists = []
+        d = SequencePhenotypeInteractionData(0, 0)
+        for id in self.ids:
+            phen = Phenotype(self, id)
+            for id_ in self.ids:
+                phen_ = Phenotype(self, id_)
+                cur_dist = SequencePhenotypeStructure.get_sequence_distance(
+                    phen, phen_, d
+                )
+                dists.append(cur_dist)
+        return dists
 
     @classmethod
     def sequence_matrix_adjustment(self, sequence_matrix):
