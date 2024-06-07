@@ -299,6 +299,7 @@ def savefig_unsafe(
     sim: Simulation = None,
     plt_fn: Callable = report_graph,
     path_to_output=path_to_output,
+    extra=""
 ):
     """
     Save without any safety the file in the designated location. This will overwrite all previous files.
@@ -307,6 +308,8 @@ def savefig_unsafe(
         sim = get_sim()
     plt = plt_fn(sim)
     out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}.png"
+    if extra != "":
+        out_path = f"{path_to_output}output_{sim.config_name}_{plt_fn_label[plt_fn]}_{extra}.png"
     plt.savefig(out_path, bbox_inches="tight")
 
 
