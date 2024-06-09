@@ -17,6 +17,9 @@ from sim.discrete_model import Simulation
 
 ## Configuring
 
+### First create or find the configuration you would like within `configurations.csv`
+See `sim/config/readme.md`.
+
 ### The primary simulation configuration file `conf.py`
 
 Item | Effect
@@ -30,3 +33,8 @@ sim_state_init_type | `detailed` or ==?==. Specifies how much data is stored ins
 ### Caveats
 
 You can specify a `sequence_matrix_config` and `Simulation` will load this in, but the simulation logic does not currently support using it (currently it remains unused and an "identity" matrix is used instead).
+
+## Running a simulation
+
+Running `main.py` will run the discrete simulation. 
+Running `continuous_run.py` will run the continuous simulation (not developed by me, but adapted by me)
