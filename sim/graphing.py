@@ -2,8 +2,8 @@
 Graphing functionality, including line graphs, histograms and fish plots. Used inside the simulation, and can also be utilised externally.
 """
 
-from discrete_model import Simulation, SimulationState, CellBundle
-from config.conf import path_to_data, path_to_output
+from sim.discrete_model import Simulation, SimulationState, CellBundle
+from sim.config.conf import path_to_data, path_to_output
 import numpy as np
 import pandas as pd
 from typing import Callable

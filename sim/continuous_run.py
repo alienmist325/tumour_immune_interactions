@@ -5,9 +5,9 @@ A run file that sets up Marta's continuous model simulation from the specified c
 # TODO: Add graph functionality
 
 
-from continuous_model import matrix_exponential_dist, interaction_matrix_model
+from sim.continuous_model import matrix_exponential_dist, interaction_matrix_model
 import numpy as np
-from inputs import get_sim_configuration, get_matrix_function_from_config
+from sim.inputs import get_sim_configuration, get_matrix_function_from_config
 
 cf = get_sim_configuration("continuous")
 
@@ -17,15 +17,16 @@ if cf.subtype == "lattice":
     affinity_matrix = const_affinity_matrix
 else:
     get_affinity_matrix = get_matrix_function_from_config(cf.affinity_matrix_config)
-    affinity_matrix =  1 * get_affinity_matrix(None)
+    affinity_matrix = 1 * get_affinity_matrix(None)
     print(affinity_matrix)
     # This is deleting rows. Could we do something different?
-    real_aff_matrix = np.zeros((21,21))
-    real_aff_matrix[:affinity_matrix.shape[0], :affinity_matrix.shape[1]] = affinity_matrix
+    real_aff_matrix = np.zeros((21, 21))
+    real_aff_matrix[: affinity_matrix.shape[0], : affinity_matrix.shape[1]] = (
+        affinity_matrix
+    )
     affinity_matrix = real_aff_matrix
-    #for i in range(9):
+    # for i in range(9):
     #    affinity_matrix= np.delete(affinity_matrix,-1, axis=0)
-
 
 
 nC, nT, u_vector, time_vector = interaction_matrix_model(

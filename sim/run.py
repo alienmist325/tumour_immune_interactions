@@ -2,9 +2,9 @@
 Running my discrete model simulation (and setting it up).
 """
 
-from discrete_model import Simulation, UniversalCellParams, Selectivities
-from config.conf import path_to_data
-from inputs import (
+from sim.discrete_model import Simulation, UniversalCellParams, Selectivities
+from sim.config.conf import path_to_data
+from sim.inputs import (
     get_sim_configuration,
     read_phenotypes,
     get_matrix_function_from_config,
