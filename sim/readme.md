@@ -19,6 +19,8 @@ Name | Usage
 
 ## Notes on input for `discrete_model.py`
 
-At the end, you are asked about "appending the config name". Generally say no to this. This setting is most useful when you are creating lots of simulations and want to save each by a different filename. In particular, graph viewing won't work.
+At the end, you are asked about whether you want to "append the config name?". Generally say no to this. This setting is most useful when you are creating lots of simulations and want to save each by a different filename. In particular, graph viewing won't work by default since the file will no longer be `sim.pickle`
 
 If you just want to run a simulation one at a time, and then see the graph, indeed, say no to appending the config name.
+
+## See `config/readme.md` for more important configuration notes

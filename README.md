@@ -1,4 +1,4 @@
-A set of simulations modelling the behaviour and interaction of T-cells and tumour cells in the body.
+# A set of simulations modelling the behaviour and interaction of T-cells and tumour cells in the body.
 
 
 ## Setting up
@@ -21,14 +21,13 @@ from sim.discrete_model import Simulation
 See `sim/config/readme.md`.
 
 ### The primary simulation configuration file `conf.py`
+This is used for:
+1) Interrupting the simulation
+2) Specifying where outputs and simulation files go
+3) Changing how much simulation data is stored
 
-Item | Effect
---- | ---
-interrupt | Set to true to safely interrupt at the next time step. This will save the simulation as a `.pickle`, and end the execution. (The file will also be reset so `interrupt = False` once more)
-debug | Set to true to see output triggered by `self.print` inside `Simulation`
-path_to_data | Where you read from and save to for simulation `sim.pickle` files
-path_to_output | Where graph outputs and more go.
-sim_state_init_type | `detailed` or ==?==. Specifies how much data is stored inside each `SimulationState`. `detailed` will be more performance heavy, but is certainly necessary for e.g. fish plotting
+See `sim/config/conf.md` for details.
+
 
 ### Caveats
 
@@ -38,3 +37,24 @@ You can specify a `sequence_matrix_config` and `Simulation` will load this in, b
 
 Running `main.py` will run the discrete simulation. 
 Running `continuous_run.py` will run the continuous simulation (not developed by me, but adapted by me)
+
+
+# What simulations can be run, and what features exist?
+
+Three types are fully implemented:
+- Discrete lattice simulations
+- Discrete sequence simulations
+- Continuous "lattice" simulations
+
+The discrete sequence simulation was the type made for this project.
+
+Functionality
+- A configuration manager
+- Argument validation
+- The ability to interrupt simulations, save and load them
+- Flexible storage of simulation history
+- The ability to implement new `PhenotypeStructure` types
+- A graphing suite which supports line graphs, histograms and fish plots
+
+
+Note that we refer to T-cells as `CTL`s in the code.

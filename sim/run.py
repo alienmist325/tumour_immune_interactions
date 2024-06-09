@@ -16,8 +16,6 @@ def create_simulation(config_name=None):
     cf = get_sim_configuration("discrete", config_name)
     print("Blom", cf.subtype)
 
-    cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
-
     tumour_universal_params = UniversalCellParams(
         cf.tumour_natural_prolif_rate,
         cf.tumour_natural_death_rate,
@@ -35,6 +33,8 @@ def create_simulation(config_name=None):
         selectivities = Selectivities(
             cf.affinity_range, cf.CTL_selectivity, cf.tumour_selectivity
         )
+
+        cf.no_possible_phenotypes = int(cf.no_possible_phenotypes)
 
         sim = Simulation(
             cf.time_step,
