@@ -5,7 +5,7 @@ An implementation of the model Almeida described, complete with its parameters a
 import random
 import numpy as np
 from copy import deepcopy
-import config.conf as conf
+import sim.config.conf as conf
 import importlib
 import pickle
 from typing import TypeVar
@@ -338,9 +338,9 @@ class Simulation:
             phenotype_1_id,
             phenotype_2_id,
         ) not in self.phenotype_separation_scaling:
-            self.phenotype_separation_scaling[
-                (phenotype_1_id, phenotype_2_id)
-            ] = self.compute_interaction_scaling(phenotype_1_id, phenotype_2_id, range)
+            self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)] = (
+                self.compute_interaction_scaling(phenotype_1_id, phenotype_2_id, range)
+            )
         return self.phenotype_separation_scaling[(phenotype_1_id, phenotype_2_id)]
 
     def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype_id):
@@ -434,17 +434,17 @@ class Simulation:
 
     def get_phenotype_tumour_probabilities(self, phenotype_id):
         if phenotype_id not in self.phenotype_tumour_probabilities:
-            self.phenotype_tumour_probabilities[
-                phenotype_id
-            ] = self.compute_phenotype_tumour_probabilities(phenotype_id)
+            self.phenotype_tumour_probabilities[phenotype_id] = (
+                self.compute_phenotype_tumour_probabilities(phenotype_id)
+            )
 
         return self.phenotype_tumour_probabilities[phenotype_id]
 
     def get_phenotype_CTL_probabilities(self, phenotype_id):
         if phenotype_id not in self.phenotype_CTL_probabilities:
-            self.phenotype_CTL_probabilities[
-                phenotype_id
-            ] = self.compute_phenotype_CTL_probabilities(phenotype_id)
+            self.phenotype_CTL_probabilities[phenotype_id] = (
+                self.compute_phenotype_CTL_probabilities(phenotype_id)
+            )
 
         return self.phenotype_CTL_probabilities[phenotype_id]
 

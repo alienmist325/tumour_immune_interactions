@@ -5,11 +5,11 @@ My new proposed discrete model, with a flexible phenotype space.
 from dataclasses import dataclass
 import numpy as np
 from copy import deepcopy
-import config.conf as conf
+import sim.config.conf as conf
 import importlib
 import pickle
 import time
-from phenotype import (
+from sim.phenotype import (
     Phenotype,
     PhenotypeInteractions,
     PhenotypeStructure,
@@ -146,8 +146,6 @@ class CellBundle:
 
             rng = np.random.default_rng()
             births, deaths, quiescences = rng.multinomial(number, weights)
-
-           
 
             # print(births, "|", deaths, "|", quiescences)
             new_cells.create_cells(phenotype, births)
@@ -519,7 +517,7 @@ class Simulation:
 
             if conf.interrupt:
                 print("The simulation has been interrupted and will now safely save.")
-                from inputs import reset_interrupt
+                from sim.inputs import reset_interrupt
 
                 reset_interrupt()
                 return
@@ -596,7 +594,7 @@ class Simulation:
             ))
         self.print("End")
         """
-        
+
         return birth, death, 1 - (birth + death)
 
     def compute_phenotype_CTL_probabilities(self, phenotype):
