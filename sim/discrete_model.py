@@ -57,10 +57,6 @@ class CellBundle:
         return sum(self.cells_at_phenotype.values())
 
     def create_cells(self, phenotype: Phenotype, number):
-        """
-        if PhenotypeStructure.is_excluded_phenotype(self.phen_struct, phenotype):
-            return
-        """
 
         if phenotype not in self.cells_at_phenotype:
             self.cells_at_phenotype[phenotype] = number
@@ -96,6 +92,9 @@ class CellBundle:
         universal_params: UniversalCellParams,
         phen_struct: PhenotypeStructure,
     ):
+        """
+        Create a cell bundle with a certain phenotype structure and set of universal cell parameters, randomising the choice of phenotype inside the structure.
+        """
         cell_bundle = CellBundle(universal_params, phen_struct, {})
         for i in range(number):
             cell_bundle.create_cells(phen_struct.get_random_phenotype(), 1)
@@ -128,29 +127,21 @@ class CellBundle:
         cells,
         get_phenotype_probabilities,
     ):
+        """
+        The default evolve population method. Uses simple logic, but is inefficient.
+        """
         new_cells = deepcopy(cells)
         for phenotype, number in cells.cells_at_phenotype.items():
-            """
-            if PhenotypeStructure.is_excluded_phenotype(
-                cells.phen_struct, phenotype
-            ):
-                continue
-            """
-            weights = get_phenotype_probabilities(phenotype)
 
-            """
-            with open("debug.txt", "a") as file:
-                line = str(phenotype.id) + "," + str(phenotype.get_value()) + "," + str(weights[0]) + "," + str(weights[1]) + "," + str(number) + "\n"
-                file.write(line)
-            """
+            weights = get_phenotype_probabilities(phenotype)
 
             rng = np.random.default_rng()
             births, deaths, quiescences = rng.multinomial(number, weights)
 
-            # print(births, "|", deaths, "|", quiescences)
+            # self.print(births, "|", deaths, "|", quiescences)
             new_cells.create_cells(phenotype, births)
             new_cells.kill_cells(phenotype, deaths)
-            # print(len(new_cells))
+
             # Could just subtract and do this in one step
             new_cells.birth_prob = weights[0]
             new_cells.death_prob = weights[1]
@@ -162,6 +153,12 @@ class CellBundle:
         cells,
         get_phenotype_probabilities,
     ):
+        """
+        A vectorised version of the evolve population method. Was written for the SequencePhenotypeStructure, but this may no longer work.
+
+        Unused
+        TODO: Implement for any phenotype space using more generalised logic.
+        """
         new_cells = deepcopy(cells)
         cells_at_phenotype_iterable = list(cells.cells_at_phenotype.items())
         cells_at_phenotype_array = np.empty(
@@ -190,12 +187,22 @@ class CellBundle:
         cells,
         get_phenotype_probabilities,
     ):
+        """
+        Evolve the population by a single time-step.
+        """
         return CellBundle.evolve_population_loop(cells, get_phenotype_probabilities)
 
 
 class SimulationStateTypes:
+    """
+    A type specifying what information should be stored in the simulation's history
+    """
+
     @classmethod
     def populations_only(self, state, CTL_cells: CellBundle, tumour_cells: CellBundle):
+        """
+        Get the lightest SimulationState. Use this if you do not need phenotype proportions, or other details at every time step.
+        """
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
         return state
@@ -204,6 +211,9 @@ class SimulationStateTypes:
     def whole_cell_bundles(
         self, state, CTL_cells: CellBundle, tumour_cells: CellBundle
     ):
+        """
+        Get the most detailed SimulationState. Does not throw away any data, but performance may suffer as a result.
+        """
         state.CTL_cells_pop = len(CTL_cells)
         state.tumour_cells_pop = len(tumour_cells)
         state.CTL_cells = CTL_cells
@@ -212,6 +222,10 @@ class SimulationStateTypes:
 
 
 class SimulationState:
+    """
+    A single piece of simulation history.
+    """
+
     type_to_init_dict = {
         "default": SimulationStateTypes.populations_only,
         "detailed": SimulationStateTypes.whole_cell_bundles,
@@ -245,6 +259,10 @@ class SimulationHistory:
 
 
 class Simulation:
+    """
+    A discrete simulation, functional for any chosen PhenotypeStructures
+    """
+
     def __init__(
         self,
         time_step_size,
@@ -260,10 +278,6 @@ class Simulation:
     ):
         self.config_name = config_name
         self.final_time = final_time
-        if conf.m_adjustment:
-            scalar = 1  # 1.15, 2
-            time_step_size *= scalar
-            final_time *= scalar
         self.time_step_size = time_step_size
         self.time_step = 0  # An integer describing which time step we're on
         self.final_time_step = int(final_time / time_step_size)
@@ -272,7 +286,7 @@ class Simulation:
             self.TCR_binding_affinity = kwargs["TCR_binding_affinity"]
             selectivities = kwargs["selectivities"]
 
-            print("lattice")
+            print("Lattice")
             """
             raise NotImplementedError(
                 "The vectorisation modification has not yet been made for lattices. Please revert the code to use non `_vec` functions before removing this error statement."
@@ -285,16 +299,15 @@ class Simulation:
             )
         elif subtype == "sequence":
             self.sequence_chars = sequence_chars
-            print(kwargs["CTL_sequences"])
             self.CTL_sequences = kwargs["CTL_sequences"]
             self.tumour_sequences = kwargs["tumour_sequences"]
             self.sequence_matrix = kwargs["get_sequence_matrix"](self)
             self.affinity_matrix = kwargs["get_affinity_matrix"](self)
             self.binding_scaling = kwargs["binding_scaling"]
 
-            print("sequence")
+            print("Sequence")
             warnings.warn(
-                "The sequence matrix functionality has not been improved, so this will be ignored in the population dynamics."
+                "The sequence matrix functionality has not been implemented, so this will be ignored in the population dynamics."
             )
             self.setup_default_sequence_phenotypes(
                 self.tumour_sequences,
@@ -341,6 +354,7 @@ class Simulation:
         self.CTL_struct = deepcopy(
             self.tumour_struct
         )  # The LatticePhenotypeStructure is designed such that both structures have the same underlying definition, but we have to create two separate instances so that we can specify different parameters for each
+
         self.phen_int = PhenotypeInteractions.get_default_lattice_interactions(
             self.tumour_struct,
             self.CTL_struct,
@@ -366,10 +380,14 @@ class Simulation:
         affinity_matrix:
             A matrix indicating the affinities between all the CTLs and tumours present
 
+        binding_scaling:
+            A cross-interaction-only additional scaling
+
 
         """
         self.tumour_struct = SequencePhenotypeStructure(possible_tumours)
         self.CTL_struct = SequencePhenotypeStructure(possible_CTLs)
+
         self.phen_int = PhenotypeInteractions.get_default_sequence_interactions(
             self.tumour_struct,
             self.CTL_struct,
@@ -379,14 +397,25 @@ class Simulation:
         )
 
     def get_immune_score(self):
+        """
+        Get the immune score. Unused.
+        """
+
         return len(self.CTL_cells.cells) / len(self.tumour_cells.cells)
 
     def get_average_immune_score(self):
+        """
+        Get the average immune scoare. Unimplemented
+        """
         pass
 
     def get_phenotype_natural_death_rate_list(
         self, cells: CellBundle, phenotype: Phenotype
     ):
+        """
+        The default death rate method. Uses simple logic, but is inefficient.
+        """
+
         # Based on death base rate, and a weighted sum of the competition from "close species"
         return cells.universal_params.natural_death_base_rate * sum(
             [
@@ -402,6 +431,12 @@ class Simulation:
     def get_phenotype_natural_death_rate_vec(
         self, cells: CellBundle, phenotype: Phenotype
     ):
+        """
+        A vectorised version of the death rate method. Was written for the SequencePhenotypeStructure, but this may no longer work.
+
+        Unused
+        TODO: Implement for any phenotype space using more generalised logic.
+        """
         phen_1 = phenotype
         phen_2 = next(iter(cells.cells_at_phenotype.items()))[0]  # assuming non-zero
         struct_tuple = (phen_1.struct, phen_2.struct)
@@ -420,31 +455,10 @@ class Simulation:
         return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
 
     def get_phenotype_natural_death_rate(self, cells: CellBundle, phenotype: Phenotype):
+        """
+        Compute the current natural death rate of the chosen phenotype due to competition.
+        """
         return self.get_phenotype_natural_death_rate_list(cells, phenotype)
-
-    def get_phenotype_interaction_induced_rate_vec(
-        self,
-        cells: CellBundle,
-        other_cells: CellBundle,
-        phenotype: Phenotype,
-    ):
-        # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
-        # Does not factor the range at all.
-
-        phen_1 = phenotype
-        phen_2 = next(iter(other_cells.cells_at_phenotype.items()))[
-            0
-        ]  # assuming non-zero
-        struct_tuple = (phen_1.struct, phen_2.struct)
-        data = self.phen_int.interaction_data[struct_tuple]
-        # print(data)
-        vec1 = data.interaction_matrix[phenotype.id, :]
-        vec2 = np.zeros(len(phen_2.struct.ids))
-
-        for phen, number in other_cells.cells_at_phenotype.items():
-            vec2[phen.id] = number
-
-        return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
 
     def get_phenotype_interaction_induced_rate_list(
         self,
@@ -452,6 +466,9 @@ class Simulation:
         other_cells: CellBundle,
         phenotype: Phenotype,
     ):
+        """
+        The default interaction rate method. Uses simple logic, but is inefficient.
+        """
         # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
         return (
             cells.universal_params.interaction_induced_base_rate
@@ -470,30 +487,53 @@ class Simulation:
             )
         )
 
+    def get_phenotype_interaction_induced_rate_vec(
+        self,
+        cells: CellBundle,
+        other_cells: CellBundle,
+        phenotype: Phenotype,
+    ):
+        """
+        A vectorised version of the interaction rate method. Was written for the SequencePhenotypeStructure, but this may no longer work.
+
+        Unused
+        TODO: Implement for any phenotype space using more generalised logic.
+        """
+        # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
+
+        phen_1 = phenotype
+        phen_2 = next(iter(other_cells.cells_at_phenotype.items()))[
+            0
+        ]  # assuming non-zero
+        struct_tuple = (phen_1.struct, phen_2.struct)
+        data = self.phen_int.interaction_data[struct_tuple]
+        # print(data)
+        vec1 = data.interaction_matrix[phenotype.id, :]
+        vec2 = np.zeros(len(phen_2.struct.ids))
+
+        for phen, number in other_cells.cells_at_phenotype.items():
+            vec2[phen.id] = number
+
+        return cells.universal_params.interaction_induced_base_rate * np.dot(vec1, vec2)
+
     def get_phenotype_interaction_induced_rate(
         self,
         cells: CellBundle,
         other_cells: CellBundle,
         phenotype: Phenotype,
     ):
-        # The rate of growth/ death resulting from the interaction of two sets of cells (tumour and CTL)
         """
-        print(
-            self.get_phenotype_interaction_induced_rate_list(
-                cells, other_cells, phenotype
-            )
-        )
-        print(
-            self.get_phenotype_interaction_induced_rate_vec(
-                cells, other_cells, phenotype
-            )
-        )
+        Compute the rate of growth/ death of the chosen phenotype induced by interpopulation interaction.
         """
+
         return self.get_phenotype_interaction_induced_rate_list(
             cells, other_cells, phenotype
         )
 
     def mutate(self, cells: CellBundle):
+        """
+        Randomly mutate the cell bundle, with the specified mutation probability.
+        """
         new_cells = deepcopy(cells)
         for phenotype, number in cells.cells_at_phenotype.items():
             rng = np.random.default_rng()
@@ -504,12 +544,10 @@ class Simulation:
         return new_cells
 
     def run(self):
+        """
+        Run the simulation.
+        """
         self.print("The simulation is starting.")
-
-        self.debug_CTL_birth_probs = []
-        self.debug_CTL_death_probs = []
-        self.debug_tumour_birth_probs = []
-        self.debug_tumour_death_probs = []
 
         start_time = time.time()
         while self.time_step < self.final_time_step:
@@ -542,19 +580,17 @@ class Simulation:
             self.print("C: ", len(self.tumour_cells), " | T:", len(self.CTL_cells))
             self.print(f"Iteration done after {time.time() - start_time}.")
             self.print("Time step: ", self.time_step, "/", self.final_time_step)
+
             # Post-calculation
-
-            self.debug_CTL_birth_probs.append(self.CTL_cells.birth_prob)
-            self.debug_CTL_death_probs.append(self.CTL_cells.death_prob)
-            self.debug_tumour_birth_probs.append(self.tumour_cells.birth_prob)
-            self.debug_tumour_death_probs.append(self.tumour_cells.death_prob)
-
             self.history.update(SimulationState(self.CTL_cells, self.tumour_cells))
 
             # End it
         self.print("The final time has been reached, so the simulation is over.")
 
     def print(self, *string):
+        """
+        Print the string, but in debug mode only.
+        """
         if conf.debug:
             print(*string)
 
@@ -586,15 +622,6 @@ class Simulation:
             )
         )
 
-        """
-        self.print("Begin")
-        self.print(self.get_phenotype_natural_death_rate(self.tumour_cells, phenotype))
-        self.print( self.get_phenotype_interaction_induced_rate(
-                self.tumour_cells, self.CTL_cells, phenotype
-            ))
-        self.print("End")
-        """
-
         return birth, death, 1 - (birth + death)
 
     def compute_phenotype_CTL_probabilities(self, phenotype):
@@ -610,6 +637,9 @@ class Simulation:
         return birth, death, 1 - (birth + death)
 
     def extend(self, additional_time):
+        """
+        Extend the final time of the simulation.
+        """
         self.final_time += additional_time
         self.final_time_step = int(self.final_time / self.time_step_size)
 
@@ -632,51 +662,63 @@ class Simulation:
             print("Pickling done.")
 
 
-def get_ones_matrix(w: int, h: int):
-    return np.ones((w, h))
+def get_ones_matrix(h: int, w: int):
+    """
+    Get a generic uniform matrix.
+    """
+    return np.ones((h, w))
 
 
 def get_ones_matrix_sequences(sim: Simulation):
+    """
+    Get a square uniform matrix from a list of sequences.
+    """
     l = len(sim.sequence_chars)
     return get_ones_matrix(l, l)
 
 
 def get_ones_matrix_affinity(sim: Simulation):
-    w = len(sim.CTL_sequences)
-    h = len(sim.tumour_sequences)
-    return get_ones_matrix(w, h)
+    """
+    Get a uniform matrix with a height equal to the number of CTL sequences, and a width equal to the number of tumour sequences.
+    """
+    h = len(sim.CTL_sequences)
+    w = len(sim.tumour_sequences)
+    return get_ones_matrix(h, w)
 
 
-def get_random_matrix(w: int, h: int):
+def get_random_matrix(h: int, w: int):
     """
     Generate a random matrix with entries in [0,1)
     """
     print(w)
     print(h)
-    matrix = np.random.rand(w, h)
+    matrix = np.random.rand(h, w)
     print(matrix)
     return matrix
 
 
-def get_random_exp_matrix(w: int, h: int, parameter: float = 1):
+def get_random_exp_matrix(h: int, w: int, parameter: float = 1):
     """
     Generate an exponential matrix with entries in [0,\infty)
     """
     print(w)
     print(h)
-    matrix = np.random.exponential(1 / parameter, (w, h))
+    matrix = np.random.exponential(1 / parameter, (h, w))
     print(matrix)
     return matrix
 
 
-def get_random_exp_matrix_by_input(w, h):
+def get_random_exp_matrix_by_input(h, w):
+    """
+    Generate a random matrix with entries in the exponential distribution.
+    """
     parameter = float(input("What parameter for the distribution would you like?"))
-    return get_random_exp_matrix(w, h, parameter)
+    return get_random_exp_matrix(h, w, parameter)
 
 
 def get_random_matrix_sequences(sim: Simulation):
     """
-    Generate entries from a uniform distribution (this would be a sensible decision)
+    Generate entries from a uniform distribution (this would be a sensible decision).
     """
     l = len(sim.sequence_chars)
     return get_random_matrix(l, l)
@@ -686,31 +728,37 @@ def get_random_matrix_affinity(sim: Simulation):
     """
     Generate entries from an exponential distribution (this mimics the idea of not having most phenotypes bind). But we have renormalised and modified to keep within [0,1]
     """
-    w = len(sim.CTL_sequences)
-    h = len(sim.tumour_sequences)
-    exp_matrix = get_random_exp_matrix_by_input(w, h)
+    h = len(sim.CTL_sequences)
+    w = len(sim.tumour_sequences)
+    exp_matrix = get_random_exp_matrix_by_input(h, w)
     norm_matrix = 1 - (1 / (1 + exp_matrix))
     print(norm_matrix)
     return norm_matrix
 
 
 def get_identity_matrix_affinity(sim: Simulation):
-    w = len(sim.CTL_sequences)
-    h = len(sim.tumour_sequences)
-    mat = np.eye(w, h)
+    """
+    Generate a binding probability matrix that is an identity matrix.
+    """
+    h = len(sim.CTL_sequences)
+    w = len(sim.tumour_sequences)
+    mat = np.eye(h, w)
     return mat
 
 
 def get_split_matrix_affinity(sim: Simulation):
+    """
+    Generate a split matrix as a binding probability matrix.
+    """
     k = int(input("How many non-interacting phenotypes do you want?"))
-    w = len(sim.CTL_sequences)
-    h = len(sim.tumour_sequences)
+    h = len(sim.CTL_sequences)
+    w = len(sim.tumour_sequences)
 
-    row = np.ones(w)
+    row = np.ones(h)
     for i in range(k):
         row[i] = 0
     # First k are 0. Last w-k are 1.
 
-    matrix = np.full((w, h), row)
+    matrix = np.full((h, w), row)
     print(matrix)
     return matrix

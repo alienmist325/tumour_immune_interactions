@@ -302,7 +302,7 @@ def savefig_unsafe(
     extra="",
 ):
     """
-    Save without any safety the file in the designated location. This will overwrite all previous files.
+    Save (without any safety) the file in the designated location. This will overwrite all previous files.
     """
     if sim is None:
         sim = get_sim()

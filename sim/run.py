@@ -14,7 +14,6 @@ from sim.inputs import (
 def create_simulation(config_name=None):
     print(config_name)  # This is what you pass in by the command line (ahead of time)
     cf = get_sim_configuration("discrete", config_name)
-    print("Blom", cf.subtype)
 
     tumour_universal_params = UniversalCellParams(
         cf.tumour_natural_prolif_rate,
@@ -56,7 +55,6 @@ def create_simulation(config_name=None):
         tumour_sequences = read_phenotypes(cf.tumour_sequence_path)
         get_sequence_matrix = get_matrix_function_from_config(cf.sequence_matrix_config)
         get_affinity_matrix = get_matrix_function_from_config(cf.affinity_matrix_config)
-        print(CTL_sequences)
 
         sim = Simulation(
             cf.time_step,

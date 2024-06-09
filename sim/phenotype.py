@@ -40,9 +40,6 @@ class PhenotypeStructure(ABC):
     def __eq__(self, other):
         pass
 
-    # (Not anymore) IDEA: We want to have a general function here which will take in the two ids and get the scaling. If they're the same type, we should redirect back down to the
-    # relevant class, since e.g. LatticePhenotypeStructure _can definitely_ compare between two lattice phenotypes. If they're different, we'll cover it here and overload.
-
 
 class Phenotype:
     def __init__(self, struct: PhenotypeStructure, id):
@@ -57,6 +54,9 @@ class Phenotype:
         return self.struct.get_value(self)
 
     def get_random_mutation(self):
+        """
+        Get a random mutation of the current phenotype. We pass up to the `PhenotypeStructure`.
+        """
         return self.struct.get_random_mutation(self)
 
     def __hash__(self):
@@ -81,7 +81,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     def get_random_phenotype(self):
         """
-        Generate a valid phenotype id. ==Or an actual phenotype?==
+        Generate a valid phenotype id.
         """
         return Phenotype(self, random.choice(self.ids))
 
@@ -106,7 +106,7 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         """
         Get the value associated with a phenotype id.
         """
-        return self.sequences[phenotype.id]  # By default, these are the same
+        return self.sequences[phenotype.id]
 
     @classmethod
     def get_affinity_scaling(
@@ -116,15 +116,8 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         binding_affinity_matrix = data.interaction_matrix
         binding_scaling = data.scaling
         affinity = binding_affinity_matrix[phen_1.id, phen_2.id]
-        # distance = 1 / binding_affinity_matrix[phen_1.id, phen_2.id]
         # TODO: Improve this implementation; it's quite crude as it is and not calibrated
-        # print(distance)
-        # print(range)
         return binding_scaling * affinity
-        # if distance < range:
-        #    return 0
-        # else:
-        #    return affinity
 
     @classmethod
     def get_sequence_scaling(
@@ -180,21 +173,9 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         )  # or is it better to do self.etc rather than the class method? Which works?
 
     @classmethod
-    def get_standard_interaction_data(self):
-        """
-        An unused function that illustrates usage.
-        """
-        # An example of some data
-        # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
-        sequence_matrix = np.identity(10)  # TODO: fix this
-        return sequence_matrix
-
-    @classmethod
     def get_cross_interaction_function(self):
         return self.get_affinity_scaling
 
-    @classmethod
-    def get_standard_cross_interaction_data(self):
         """
         An unused function that illustrates usage.
         """
@@ -211,14 +192,15 @@ class SequencePhenotypeStructure(PhenotypeStructure):
 
     def get_distance_matrix(self, data: SequencePhenotypeInteractionData):
         if self.distance_matrix is None:
-
             self.compute_distance_matrix(data)
 
         return self.distance_matrix
 
     def compute_distance_matrix(self, data: SequencePhenotypeInteractionData):
+        """
+        Compute all possible distances between pairs of phenotypes and return the matrix of these.
+        """
         # Create a list of all possible phenotypes
-        print("computing")
         all_phenotypes = [Phenotype(self, id) for id in self.ids]
         num = len(all_phenotypes)
         all_phenotype_pair_matrix = np.transpose(
@@ -242,6 +224,9 @@ class SequencePhenotypeStructure(PhenotypeStructure):
         self.distance_matrix = distance_matrix
 
     def get_distances(self):
+        """
+        Compute all possible distances between pairs and return a list of these.
+        """
         dists = []
         d = SequencePhenotypeInteractionData(0, 0)
         for id in self.ids:
@@ -258,6 +243,8 @@ class SequencePhenotypeStructure(PhenotypeStructure):
     def sequence_matrix_adjustment(self, sequence_matrix):
         """
         Scale down the weights in the sequence matrix so all values are in [0,1]. Assumes all values are positive.
+
+        No effect currently since the sequence matrix is not implemented.
         """
         sequence_matrix = np.array(sequence_matrix)
         max = sequence_matrix.max()
@@ -272,8 +259,8 @@ class LatticeInteractionData:
 
 class LatticePhenotypeStructure(PhenotypeStructure):
     """
-    Phenotypes are in the range [0,1], and are floats
-    Phenotype IDs are in the range [0, no_possible_values - 1], and are integers
+    Phenotypes are in the range [0,1], and are floats.
+    Phenotype IDs are in the range [0, no_possible_values - 1], and are integers.
     """
 
     def __init__(self, abs_max_value, no_possible_values):
@@ -287,6 +274,9 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         self.distance_matrix = None
 
     def shift(self, phen: Phenotype, no_steps, direction):
+        """
+        Shift the phenotype to another value, some number of steps away.
+        """
         phen_id = phen.id
         phen_id += no_steps * direction
         if phen_id > self.no_possible_values - 1:
@@ -296,19 +286,33 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         return Phenotype(phen.struct, phen_id)
 
     def get_value(self, phen: Phenotype):
+        """
+        Get the value of the phenotype.
+        """
         id = phen.id
         return (id * self.step_size) - self.abs_max_value
 
     def get_random_phenotype(self):
+        """
+        Get a random lattice phenotype in [0,1].
+        """
         return Phenotype(self, random.randint(0, self.no_possible_values - 1))
 
     def get_random_mutation(self, phenotype: Phenotype):
+        """
+        Get a lattice mutation (which is always a _neighbouring_ phenotype).
+        """
         no_steps = 1
         direction = random.choice([-1, 1])
         return self.shift(phenotype, no_steps, direction)
 
     @classmethod
     def is_excluded_phenotype(self, phenotype: Phenotype, exclude_percent=0.1):
+        """
+        Check if a phenotype is on the boundary of possible phenotypes.
+
+        Unused, but can be used to investigate boundary effects.
+        """
         phen_struct = phenotype.struct
         phenotype_id = phenotype.id
         no_values = phen_struct.no_possible_values
@@ -332,16 +336,6 @@ class LatticePhenotypeStructure(PhenotypeStructure):
     @classmethod
     def get_interaction_function(self):
         return self.compute_interaction_scaling
-
-    @classmethod
-    def get_standard_interaction_data(self):
-        """
-        TODO: Remove as defunct
-        """
-        # An example of some data
-        # Is this the best way to do this? In truth, we just need a specification of _what_ we need to provide
-        distance_type = "line"
-        return distance_type
 
     @classmethod
     def compute_interaction_scaling(
@@ -417,13 +411,6 @@ class LatticePhenotypeStructure(PhenotypeStructure):
         distance_matrix = vec_get_sequence_distance(all_phenotype_pair_tuple_matrix)
 
         self.distance_matrix = distance_matrix
-
-    """
-    def get_random_phenotype(self):
-        return (
-            random.randint(0, self.no_possible_values - 1) * self.step_size
-        ) - self.abs_max_value
-    """
 
 
 class PhenotypeInteractions:
