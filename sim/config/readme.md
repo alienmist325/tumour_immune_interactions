@@ -10,3 +10,4 @@ Name | Use
 
 # See `configurations.md` for information on how to set up a new simulation i.e. a new row in `configurations.csv`
 # See `arguments.md` for which parameters are optional, required or unused for each sequence type
+# See `../info/sequence_phenotype_structure.md` for details on what types of matrices are allowed
