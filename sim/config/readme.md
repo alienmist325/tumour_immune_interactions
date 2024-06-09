@@ -7,3 +7,6 @@ Name | Use
 `conf.py` | Small pythonic configuration variables, often used for debugging purposes (or anything that would be more difficult/ unintuitive than justified to store in a text file/ as a `configurations.csv` parameter).
 `peptides_from_TULIP.txt` | A set of possible tumour cell sequences, extracted from TULIP.
 `TCRs_from_TULIP.txt` | A set of possible CTL cell seqeuences, extracted from TULIP.
+
+# See `configurations.md` for information on how to set up a new simulation i.e. a new row in `configurations.csv`
+# See `arguments.md` for which parameters are optional, required or unused for each sequence type

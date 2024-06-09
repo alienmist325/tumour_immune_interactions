@@ -1,7 +1,7 @@
 A set of simulations modelling the behaviour and interaction of T-cells and tumour cells in the body.
 
 
-### Setting up
+## Setting up
 
 Begin by installing the `tumour_immune_interactions` package. 
 
@@ -15,7 +15,9 @@ You will then for example be able to do:
 from sim.discrete_model import Simulation
 ```
 
-### Configuration
+## Configuring
+
+### The primary simulation configuration file `conf.py`
 
 Item | Effect
 --- | ---
@@ -24,3 +26,7 @@ debug | Set to true to see output triggered by `self.print` inside `Simulation`
 path_to_data | Where you read from and save to for simulation `sim.pickle` files
 path_to_output | Where graph outputs and more go.
 sim_state_init_type | `detailed` or ==?==. Specifies how much data is stored inside each `SimulationState`. `detailed` will be more performance heavy, but is certainly necessary for e.g. fish plotting
+
+### Caveats
+
+You can specify a `sequence_matrix_config` and `Simulation` will load this in, but the simulation logic does not currently support using it (currently it remains unused and an "identity" matrix is used instead).

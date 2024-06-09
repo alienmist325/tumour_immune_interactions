@@ -112,7 +112,7 @@ def fish(sim: Simulation, bundle_name, absolute=False):
         )
         data = process_data(populations_df, parent_tree_df, absolute=absolute)
         sequences = bundles[-1].phen_struct.sequences
-        dist = max([len(seq) for seq in sequences])
+        # dist = max([len(seq) for seq in sequences])
         setup_figure(width=1200, height=1000 * len(sequences) / 12)
         times = np.linspace(0, sim.time_step * sim.time_step_size, sim.time_step)
         data = list(data)
@@ -299,7 +299,7 @@ def savefig_unsafe(
     sim: Simulation = None,
     plt_fn: Callable = report_graph,
     path_to_output=path_to_output,
-    extra=""
+    extra="",
 ):
     """
     Save without any safety the file in the designated location. This will overwrite all previous files.
