@@ -218,7 +218,7 @@ class SimulationState:
     }
 
     def __init__(self, CTL_cells: CellBundle, tumour_cells: CellBundle):
-        from config.conf import sim_state_init_type
+        from sim.config.conf import sim_state_init_type
 
         initialiser = SimulationState.type_to_init_dict[sim_state_init_type]
         self = initialiser(self, CTL_cells, tumour_cells)
@@ -230,7 +230,7 @@ class SimulationHistory:
 
     def __init__(self, history: list[SimulationState] = []):
         # Do I need to copy the simulation?
-        from config.conf import sim_state_init_type
+        from sim.config.conf import sim_state_init_type
 
         self.history = history
         self.state_init_type = sim_state_init_type  # We hope this is the same as each sim state, but technically, it could not be
