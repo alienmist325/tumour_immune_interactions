@@ -33,6 +33,8 @@ See `sim/config/conf.md` for details.
 
 You can specify a `sequence_matrix_config` and `Simulation` will load this in, but the simulation logic does not currently support using it (currently it remains unused and an "identity" matrix is used instead).
 
+The code, and input files refer to an `affinity_matrix`. This is a relic that should be removed, because this matrix is utilised as a `binding_probability_matrix` instead. Renaming the codebase can be done, but would require some time.
+
 ## Running a simulation
 
 Running `main.py` will run the discrete simulation. 
